@@ -76,8 +76,24 @@ export class NextJsSite extends pulumi.ComponentResource {
       // ...restOrigins
     } = this.openNextOutput.origins;
 
-
     const originAccessIdentity = new aws.cloudfront.OriginAccessIdentity(`${this.name}-origin-identity`, {}, {parent: this});
+
+    new aws.s3.BucketPolicy(`${this.name}-bucket-policy`, {
+      bucket: this.bucket.id,
+      policy: {
+        "Version": "2012-10-17",
+        "Statement": [
+          {
+            "Action": "s3:GetObject",
+            "Effect": "Allow",
+            "Principal": <any>{
+              "CanonicalUser": originAccessIdentity.s3CanonicalUserId,
+            },
+            "Resource": pulumi.interpolate`${this.bucket.arn}/*`,
+          },
+        ],
+      },
+    }, { parent: this });
 
     const defaultFunctionUrl = this.createFunctionOrigin('default', defaultOrigin as OpenNextFunctionOrigin);
     const imageFunctionUrl = this.createFunctionOrigin('image-optimizer', imageOrigin as OpenNextFunctionOrigin);
@@ -88,7 +104,7 @@ export class NextJsSite extends pulumi.ComponentResource {
         domainName: this.bucket.bucketRegionalDomainName,
         originPath: `/${s3Origin.originPath}`, // "/_assets",
         s3OriginConfig: {
-          originAccessIdentity: originAccessIdentity.cloudfrontAccessIdentityPath, // cdk: undefined
+          originAccessIdentity: originAccessIdentity.cloudfrontAccessIdentityPath
         }
       },
       {
@@ -129,7 +145,6 @@ export class NextJsSite extends pulumi.ComponentResource {
       publish: true,
     }, {parent: this});
 
-    // todo: CDK: staticCachePolicy & serverCachePolicy
     // The managed cache policy ID for `CACHING_OPTIMIZED`
     const staticCachePolicyId = "658327ea-f89d-4fab-a63d-7e88639e58f6";
     const serverCachePolicy = new aws.cloudfront.CachePolicy(`${this.name}-cache-policy`, {
@@ -265,7 +280,6 @@ export class NextJsSite extends pulumi.ComponentResource {
       code: new pulumi.asset.FileArchive(path.join(this.path, origin.bundle)),
     });
 
-    /// Distribution origins.domainName: serverFunctionUrl.functionUrl.apply(url => url.split("//")[1].split("/")[0])
     return new aws.lambda.FunctionUrl(`${this.name}-${key}-origin-lambda-url`, {
       functionName: fn.arn,
       authorizationType: "NONE",

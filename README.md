@@ -1,7 +1,7 @@
 # Deploy a NextJS application on AWS using Pulumi
 
 ## What is this?
-This is an example of how to deploy a NextJS application (v14) on AWS using Pulumi.
+This is an example of how to deploy a NextJS application (v14) on AWS using Pulumi and OpenNext (v3).
 
 
 *This is a work in progress.*
