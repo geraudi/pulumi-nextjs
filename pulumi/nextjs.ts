@@ -20,6 +20,10 @@ export class NextJsSite extends pulumi.ComponentResource {
   private table: aws.dynamodb.Table;
   private queue: aws.sqs.Queue;
 
+  private bucketPolicy: aws.iam.Policy;
+  private tablePolicy: aws.iam.Policy;
+  private queuePolicy: aws.iam.Policy;
+
   private readonly name: string;
   private readonly region: string;
 
@@ -61,6 +65,10 @@ export class NextJsSite extends pulumi.ComponentResource {
     this.table = this.createRevalidationTable();
     this.queue = this.createRevalidationQueue();
 
+    this.bucketPolicy = this.createBucketPolicy();
+    this.tablePolicy = this.createTablePolicy();
+    this.queuePolicy = this.createQueuePolicy();
+
     const origins = this.createOrigins();
     const distribution = this.createDistribution(origins);
 
@@ -93,7 +101,7 @@ export class NextJsSite extends pulumi.ComponentResource {
           },
         ],
       },
-    }, { parent: this });
+    }, {parent: this});
 
     const defaultFunctionUrl = this.createFunctionOrigin('default', defaultOrigin as OpenNextFunctionOrigin);
     const imageFunctionUrl = this.createFunctionOrigin('image-optimizer', imageOrigin as OpenNextFunctionOrigin);
@@ -163,7 +171,7 @@ export class NextJsSite extends pulumi.ComponentResource {
           headers: {
             items: [
               "accept",
-             // "accept-encoding",
+              // "accept-encoding",
               "rsc",
               "next-router-prefetch",
               "next-router-state-tree",
@@ -177,7 +185,7 @@ export class NextJsSite extends pulumi.ComponentResource {
         },
       },
     }, {parent: this});
-    // Referencing the managed origin request policy
+    // Referencing the managed origin request policy (ALL_VIEWER_EXCEPT_HOST_HEADER)
     // https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/using-managed-origin-request-policies.html#managed-origin-request-policy-all-viewer-except-host-header
     const originRequestPolicyId = "b689b0a8-53d0-40ab-baf2-68738e2966ac";
 
@@ -204,7 +212,7 @@ export class NextJsSite extends pulumi.ComponentResource {
       functionArn: cloudfrontFunction.arn,
     })
 
-    const { pathPattern, ...defaultBehaviorWithoutPathPattern } = defaultBehavior;
+    const {pathPattern, ...defaultBehaviorWithoutPathPattern} = defaultBehavior;
 
     return new aws.cloudfront.Distribution(`${this.name}-distribution`, {
       comment: "Next.js site deployed with Pulumi",
@@ -280,11 +288,103 @@ export class NextJsSite extends pulumi.ComponentResource {
       code: new pulumi.asset.FileArchive(path.join(this.path, origin.bundle)),
     });
 
+    this.grantPermissions(role, key);
+
     return new aws.lambda.FunctionUrl(`${this.name}-${key}-origin-lambda-url`, {
       functionName: fn.arn,
       authorizationType: "NONE",
       invokeMode: origin.streaming ? "RESPONSE_STREAM" : "BUFFERED",
     }, {parent: this});
+  }
+
+  grantPermissions(role: aws.iam.Role, key: string) {
+    new aws.iam.RolePolicyAttachment(`${this.name}-${key}-bucket-read-write-role-policy-attachment`, {
+      policyArn: this.bucketPolicy.arn,
+      role: role.name,
+    });
+
+    new aws.iam.RolePolicyAttachment(`${this.name}-${key}-table-read-write-data-role-policy-attachment`, {
+      policyArn: this.tablePolicy.arn,
+      role: role.name,
+    });
+
+    new aws.iam.RolePolicyAttachment(`${this.name}-${key}-queue-send-message-role-policy-attachment`, {
+      policyArn: this.queuePolicy.arn,
+      role: role.name,
+    });
+  }
+
+  createBucketPolicy(): aws.iam.Policy {
+    // Create an IAM policy that grants read/write access to the bucket
+    return new aws.iam.Policy("bucketPolicy", {
+      description: "S3 bucket read/write access",
+      policy: this.bucket.arn.apply(bucketArn => JSON.stringify({
+        Version: "2012-10-17",
+        Statement: [
+          {
+            Effect: "Allow",
+            Action: [
+              "s3:PutObject",
+              "s3:GetObject",
+            ],
+            Resource: [
+              `${bucketArn}/*`,
+            ],
+          },
+        ],
+      })),
+    });
+  }
+
+  // Create an IAM policy to allow read/write access to the DynamoDB table
+  createTablePolicy(): aws.iam.Policy {
+    return new aws.iam.Policy(`${this.name}-table-policy`, {
+      description: "DynamoDB read/write access policy",
+      policy: this.table.arn.apply(tableArn => JSON.stringify({
+        Version: "2012-10-17",
+        Statement: [
+          {
+            Effect: "Allow",
+            Action: [
+              "dynamodb:GetItem",
+              "dynamodb:PutItem",
+              "dynamodb:UpdateItem",
+              "dynamodb:DeleteItem",
+              "dynamodb:BatchGetItem",
+              "dynamodb:BatchWriteItem",
+              "dynamodb:Query",
+              "dynamodb:Scan",
+            ],
+            Resource: [
+              `${tableArn}`,
+            ],
+          },
+        ],
+      })),
+    });
+  }
+
+  // Create an IAM policy to allow sending messages to the queue
+  createQueuePolicy(): aws.iam.Policy {
+    return new aws.iam.Policy(`${this.name}-queue-policy`, {
+      description: "Allow sending messages to the SQS queue",
+      policy: this.queue.arn.apply(queueArn => JSON.stringify({
+        Version: "2012-10-17",
+        Statement: [
+          {
+            Effect: "Allow",
+            Action: [
+              "sqs:SendMessage",
+              "sqs:ReceiveMessage",
+              "sqs:DeleteMessage",
+              "sqs:GetQueueAttributes",
+              "sqs:GetQueueUrl"
+            ],
+            Resource: queueArn,
+          },
+        ],
+      })),
+    });
   }
 
   /**
@@ -441,6 +541,7 @@ export class NextJsSite extends pulumi.ComponentResource {
     );
 
     new aws.lambda.Function(`${this.name}-revalidation-table-lambda`, {
+      description: "Next.js revalidation data insert",
       handler: this.openNextOutput.additionalProps.initializationFunction.handler,
       runtime: aws.lambda.Runtime.NodeJS20dX,
       environment: {
@@ -452,7 +553,9 @@ export class NextJsSite extends pulumi.ComponentResource {
       memorySize: 128,
       role: role.arn,
       code: new pulumi.asset.FileArchive(lambdaZip),
-    });
+    }, {parent: this});
+
+    // todo: revalidation provider
 
     return table;
   }
