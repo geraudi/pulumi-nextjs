@@ -1,13 +1,12 @@
 import * as aws from "@pulumi/aws";
 import * as pulumi from "@pulumi/pulumi";
-import * as fs from "fs";
-import {execSync} from "child_process";
+import { execSync } from "child_process";
 import * as crypto from "crypto";
 import * as glob from "glob";
 import * as mime from "mime";
 import * as path from "path";
-import {OpenNextFunctionOrigin, OpenNextOutput, OpenNextS3OriginCopy} from "./types";
-import {readFileSync} from "node:fs";
+import { OpenNextFunctionOrigin, OpenNextOutput, OpenNextS3OriginCopy } from "./types";
+import { readFileSync } from "node:fs";
 
 export interface NexJsSiteArgs {
   path?: string;
@@ -39,15 +38,6 @@ export class NextJsSite extends pulumi.ComponentResource {
     this.environment = args.environment ?? {};
     this.name = name;
     this.region = 'us-east-1';
-
-    try {
-      execSync("npm install && npx open-next@latest build", {
-        stdio: "inherit",
-        cwd: this.path,
-      });
-    } catch (error) {
-      void pulumi.log.warn("Could not build Next.js site.");
-    }
 
     this.openNextOutput = JSON.parse(
       readFileSync(
@@ -84,7 +74,7 @@ export class NextJsSite extends pulumi.ComponentResource {
       // ...restOrigins
     } = this.openNextOutput.origins;
 
-    const originAccessIdentity = new aws.cloudfront.OriginAccessIdentity(`${this.name}-origin-identity`, {}, {parent: this});
+    const originAccessIdentity = new aws.cloudfront.OriginAccessIdentity(`${this.name}-origin-identity`, {}, { parent: this });
 
     new aws.s3.BucketPolicy(`${this.name}-bucket-policy`, {
       bucket: this.bucket.id,
@@ -101,7 +91,7 @@ export class NextJsSite extends pulumi.ComponentResource {
           },
         ],
       },
-    }, {parent: this});
+    }, { parent: this });
 
     const defaultFunctionUrl = this.createFunctionOrigin('default', defaultOrigin as OpenNextFunctionOrigin);
     const imageFunctionUrl = this.createFunctionOrigin('image-optimizer', imageOrigin as OpenNextFunctionOrigin);
@@ -151,7 +141,7 @@ export class NextJsSite extends pulumi.ComponentResource {
             `,
       runtime: "cloudfront-js-1.0",
       publish: true,
-    }, {parent: this});
+    }, { parent: this });
 
     // The managed cache policy ID for `CACHING_OPTIMIZED`
     const staticCachePolicyId = "658327ea-f89d-4fab-a63d-7e88639e58f6";
@@ -184,7 +174,7 @@ export class NextJsSite extends pulumi.ComponentResource {
           queryStringBehavior: "all",
         },
       },
-    }, {parent: this});
+    }, { parent: this });
     // Referencing the managed origin request policy (ALL_VIEWER_EXCEPT_HOST_HEADER)
     // https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/using-managed-origin-request-policies.html#managed-origin-request-policy-all-viewer-except-host-header
     const originRequestPolicyId = "b689b0a8-53d0-40ab-baf2-68738e2966ac";
@@ -197,7 +187,7 @@ export class NextJsSite extends pulumi.ComponentResource {
           origin: b.origin as string,
           cachePolicyId: b.origin === 's3' ? staticCachePolicyId : serverCachePolicy.id,
           functionArn: cloudfrontFunction.arn,
-          ...(b.origin !== 's3' ? {originRequestPolicyId} : {}),
+          ...(b.origin !== 's3' ? { originRequestPolicyId } : {}),
         })
       })
 
@@ -212,7 +202,7 @@ export class NextJsSite extends pulumi.ComponentResource {
       functionArn: cloudfrontFunction.arn,
     })
 
-    const {pathPattern, ...defaultBehaviorWithoutPathPattern} = defaultBehavior;
+    const { pathPattern, ...defaultBehaviorWithoutPathPattern } = defaultBehavior;
 
     return new aws.cloudfront.Distribution(`${this.name}-distribution`, {
       comment: "Next.js site deployed with Pulumi",
@@ -231,7 +221,7 @@ export class NextJsSite extends pulumi.ComponentResource {
         cloudfrontDefaultCertificate: true,
       },
       origins,
-    }, {parent: this});
+    }, { parent: this });
   }
 
   private makeBehaviour(args: {
@@ -248,10 +238,10 @@ export class NextJsSite extends pulumi.ComponentResource {
       cachedMethods: ["GET", "HEAD", "OPTIONS"],
       cachePolicyId: args.cachePolicyId,
       ...(args.originRequestPolicyId
-          ? {
-            originRequestPolicyId: args.originRequestPolicyId
-          }
-          : {}
+        ? {
+          originRequestPolicyId: args.originRequestPolicyId
+        }
+        : {}
       ),
       functionAssociations: [
         {
@@ -275,8 +265,8 @@ export class NextJsSite extends pulumi.ComponentResource {
     const environment = this.getEnvironment();
 
     const role = new aws.iam.Role(`${this.name}-${key}-origin-lambda-role`, {
-      assumeRolePolicy: aws.iam.assumeRolePolicyForPrincipal({Service: "lambda.amazonaws.com"})
-    }, {parent: this});
+      assumeRolePolicy: aws.iam.assumeRolePolicyForPrincipal({ Service: "lambda.amazonaws.com" })
+    }, { parent: this });
 
     const fn = new aws.lambda.Function(`${this.name}-${key}-origin-lambda`, {
       handler: origin.handler,
@@ -294,10 +284,16 @@ export class NextJsSite extends pulumi.ComponentResource {
       functionName: fn.arn,
       authorizationType: "NONE",
       invokeMode: origin.streaming ? "RESPONSE_STREAM" : "BUFFERED",
-    }, {parent: this});
+    }, { parent: this });
   }
 
   grantPermissions(role: aws.iam.Role, key: string) {
+    // Attach AWSLambdaBasicExecutionRole policy
+    new aws.iam.RolePolicyAttachment(`${this.name}-${key}-lambda-basic-execution-role-polict-attachment`, {
+      policyArn: "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole",
+      role: role.name,
+    });
+
     new aws.iam.RolePolicyAttachment(`${this.name}-${key}-bucket-read-write-role-policy-attachment`, {
       policyArn: this.bucketPolicy.arn,
       role: role.name,
@@ -432,7 +428,7 @@ export class NextJsSite extends pulumi.ComponentResource {
         source: new pulumi.asset.FileAsset(path.resolve(this.path, copy.from, file)),
         cacheControl,
         contentType: mime.getType(file) || undefined,
-      }, {parent: this});
+      }, { parent: this });
     }
   }
 
@@ -440,7 +436,7 @@ export class NextJsSite extends pulumi.ComponentResource {
     const bucket = new aws.s3.BucketV2(`${this.name}-open-next-bucket`, {
       bucket: `${this.name}-open-next-bucket`,
       forceDestroy: true,
-    }, {parent: this});
+    }, { parent: this });
 
     new aws.s3.BucketPublicAccessBlock(`${this.name}-bucket-block-public-access`, {
       bucket: bucket.id,
@@ -448,7 +444,7 @@ export class NextJsSite extends pulumi.ComponentResource {
       blockPublicPolicy: true,
       ignorePublicAcls: true,
       restrictPublicBuckets: true,
-    }, {parent: this});
+    }, { parent: this });
 
     return bucket;
   }
@@ -459,7 +455,7 @@ export class NextJsSite extends pulumi.ComponentResource {
       name: tableName,
       hashKey: "tag",
       rangeKey: "path",
-      pointInTimeRecovery: {enabled: true},
+      pointInTimeRecovery: { enabled: true },
       billingMode: 'PAY_PER_REQUEST',
       globalSecondaryIndexes: [
         {
@@ -471,18 +467,18 @@ export class NextJsSite extends pulumi.ComponentResource {
         },
       ],
       attributes: [
-        {name: 'tag', type: 'S'},
-        {name: 'path', type: 'S'},
-        {name: 'revalidatedAt', type: 'N'},]
-    }, {parent: this});
+        { name: 'tag', type: 'S' },
+        { name: 'path', type: 'S' },
+        { name: 'revalidatedAt', type: 'N' },]
+    }, { parent: this });
 
     new aws.cloudwatch.LogGroup(`${this.name}-revalidation-table-lambda-log-group`, {
       retentionInDays: 1,
-    }, {parent: this});
+    }, { parent: this });
 
     const role = new aws.iam.Role(`${this.name}-revalidation-table-lambda-role`, {
-      assumeRolePolicy: aws.iam.assumeRolePolicyForPrincipal({Service: "lambda.amazonaws.com"})
-    }, {parent: this});
+      assumeRolePolicy: aws.iam.assumeRolePolicyForPrincipal({ Service: "lambda.amazonaws.com" })
+    }, { parent: this });
 
     const loggingPolicyDocument = aws.iam.getPolicyDocument({
       statements: [{
@@ -494,18 +490,18 @@ export class NextJsSite extends pulumi.ComponentResource {
         ],
         resources: ["arn:aws:logs:*:*:*"],
       }],
-    }, {parent: this});
+    }, { parent: this });
 
     const loggingPolicy = new aws.iam.Policy(`${this.name}-revalidation-table-lambda-logging-policy`, {
       path: "/",
       description: "IAM policy for logging from a revalidation lambda",
-      policy: loggingPolicyDocument.then(loggingPolicyDocument => loggingPolicyDocument.json),
-    }, {parent: this});
+      policy: loggingPolicyDocument.then((loggingPolicyDocument: aws.iam.GetPolicyDocumentResult) => loggingPolicyDocument.json),
+    }, { parent: this });
 
     new aws.iam.RolePolicyAttachment(`${this.name}-revalidation-table-lambda-logging-role-policy-attachment`, {
       role: role.name,
       policyArn: loggingPolicy.arn,
-    }, {parent: this});
+    }, { parent: this });
 
     // Attach DynamoDB read/write policy to the role
     const dynamoDbPolicy = new aws.iam.Policy(`${this.name}-revalidation-table-lambda-dynamodb-policy`, {
@@ -524,23 +520,18 @@ export class NextJsSite extends pulumi.ComponentResource {
           Resource: table.arn,
         }],
       }).apply(JSON.stringify),
-    }, {parent: this});
+    }, { parent: this });
 
     new aws.iam.RolePolicyAttachment(`${this.name}-revalidation-table-lambda-dynamodb-role-policy-attachment`, {
       role: role,
       policyArn: dynamoDbPolicy.arn,
-    }, {parent: this});
+    }, { parent: this });
 
     if (!this.openNextOutput?.additionalProps?.initializationFunction) {
       throw new Error('openNextOutput.additionalProps.initializationFunction is required');
     }
 
-    const lambdaZip = createArchive(
-      path.join(this.path, this.openNextOutput.additionalProps?.initializationFunction.bundle),
-      'dynamodb-provider.zip'
-    );
-
-    new aws.lambda.Function(`${this.name}-revalidation-table-lambda`, {
+    const insertFn = new aws.lambda.Function(`${this.name}-revalidation-table-lambda`, {
       description: "Next.js revalidation data insert",
       handler: this.openNextOutput.additionalProps.initializationFunction.handler,
       runtime: aws.lambda.Runtime.NodeJS20dX,
@@ -552,10 +543,14 @@ export class NextJsSite extends pulumi.ComponentResource {
       timeout: 15,
       memorySize: 128,
       role: role.arn,
-      code: new pulumi.asset.FileArchive(lambdaZip),
-    }, {parent: this});
+      code: new pulumi.asset.FileArchive(path.join(this.path, this.openNextOutput.additionalProps?.initializationFunction.bundle)),
+    }, { parent: this });
 
-    // todo: revalidation provider
+    // Invoke the Lambda function at deploy time
+    const invokeLambda = new aws.lambda.Invocation(`${this.name}-revalidation-table-seeder`, {
+      functionName: insertFn.name,
+      input: pulumi.jsonStringify({ date: Date.now().toString() })
+    });
 
     return table;
   }
@@ -571,7 +566,7 @@ export class NextJsSite extends pulumi.ComponentResource {
 
     // Create IAM role and attach policies for Lambda to access SQS and Cloudwatch logs
     const role = new aws.iam.Role(`${this.name}-revalidation-queue-lambda-role`, {
-      assumeRolePolicy: aws.iam.assumeRolePolicyForPrincipal({Service: "lambda.amazonaws.com"}),
+      assumeRolePolicy: aws.iam.assumeRolePolicyForPrincipal({ Service: "lambda.amazonaws.com" }),
     });
 
     // Cloudwatch policy
@@ -590,7 +585,7 @@ export class NextJsSite extends pulumi.ComponentResource {
     const loggingPolicy = new aws.iam.Policy(`${this.name}-revalidation-queue-lambda-logging-policy`, {
       path: "/",
       description: "IAM policy for logging from a revalidation queue lambda",
-      policy: loggingPolicyDocument.then(loggingPolicyDocument => loggingPolicyDocument.json),
+      policy: loggingPolicyDocument.then((loggingPolicyDocument: aws.iam.GetPolicyDocumentResult) => loggingPolicyDocument.json),
     });
 
     new aws.iam.RolePolicyAttachment(`${this.name}-revalidation-queue-lambda-logging-role-policy-attachment`, {
@@ -621,15 +616,9 @@ export class NextJsSite extends pulumi.ComponentResource {
     if (!this.openNextOutput?.additionalProps?.revalidationFunction) {
       throw new Error('openNextOutput.additionalProps.revalidationFunction is required');
     }
-
-    const lambdaZip = createArchive(
-      path.join(this.path, this.openNextOutput.additionalProps.revalidationFunction.bundle),
-      'revalidation-function.zip'
-    );
-
     const consumer = new aws.lambda.Function(`${this.name}-revalidation-queue-lambda`, {
       handler: this.openNextOutput.additionalProps.revalidationFunction.handler,
-      code: new pulumi.asset.FileArchive(lambdaZip),
+      code: new pulumi.asset.FileArchive(path.join(this.path, this.openNextOutput.additionalProps.revalidationFunction.bundle)),
       runtime: aws.lambda.Runtime.NodeJS20dX,
       timeout: 30,
       role: role.arn
@@ -647,23 +636,4 @@ export class NextJsSite extends pulumi.ComponentResource {
 
 function computeHexHash(s: string) {
   return crypto.createHash("sha256").update(s).digest("hex");
-}
-
-function createArchive(fromPath: string, zipName: string) {
-  // output
-  const dir = './tmp';
-  if (!fs.existsSync(dir)) {
-    fs.mkdirSync(dir);
-  }
-  const zipPath = path.join('tmp', zipName);
-  const output = fs.createWriteStream(zipPath);
-
-  const archive = require('archiver')('zip', {
-    zlib: {level: 9} // Sets the compression level.
-  });
-  archive.pipe(output);
-  archive.directory(fromPath, false);
-  archive.finalize();
-
-  return zipPath;
 }
