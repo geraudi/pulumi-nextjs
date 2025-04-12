@@ -59,7 +59,7 @@ export default function RootLayout({
               rel="noopener noreferrer"
             >
               ↩︎ Home
-            </Link>
+            </Link> | v1.0
           </footer>
         </div>
       </body>

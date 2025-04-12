@@ -1,6 +1,5 @@
 import * as aws from "@pulumi/aws";
 import * as pulumi from "@pulumi/pulumi";
-import { execSync } from "child_process";
 import * as crypto from "crypto";
 import * as glob from "glob";
 import * as mime from "mime";
@@ -147,8 +146,8 @@ export class NextJsSite extends pulumi.ComponentResource {
     const staticCachePolicyId = "658327ea-f89d-4fab-a63d-7e88639e58f6";
     const serverCachePolicy = new aws.cloudfront.CachePolicy(`${this.name}-cache-policy`, {
       comment: `Pulumi Cloud server response cache policy`,
-      defaultTtl: 0,
-      maxTtl: 31536000,
+      defaultTtl: 60,
+      maxTtl: 60,
       minTtl: 0,
       parametersInCacheKeyAndForwardedToOrigin: {
         cookiesConfig: {
@@ -353,6 +352,7 @@ export class NextJsSite extends pulumi.ComponentResource {
             ],
             Resource: [
               `${tableArn}`,
+              `${tableArn}/index/*`,
             ],
           },
         ],
@@ -549,7 +549,10 @@ export class NextJsSite extends pulumi.ComponentResource {
     // Invoke the Lambda function at deploy time
     const invokeLambda = new aws.lambda.Invocation(`${this.name}-revalidation-table-seeder`, {
       functionName: insertFn.name,
-      input: pulumi.jsonStringify({ date: Date.now().toString() })
+      triggers: {
+        time: Date.now().toString(),
+      },
+      input: pulumi.jsonStringify({})
     });
 
     return table;
