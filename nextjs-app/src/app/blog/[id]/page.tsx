@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 interface Post {
   id: string
   title: string
@@ -31,10 +33,32 @@ export default async function Page({
   const post: Post = await fetch(`https://api.vercel.app/blog/${id}`).then(
     (res) => res.json()
   )
+  const currentDate = new Date().toLocaleDateString('en-US', {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
+  });
+
+  const currentTime = new Date().toLocaleTimeString('en-US', {
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false
+  });
+
   return (
     <main>
-      <h1>{post.title}</h1>
-      <p>{post.content}</p>
+      <h1 className="text-4xl font-bold mb-10">Incremental Static Regeneration (ISR) example</h1>
+      <h2 className="text-2xl font-bold">{post.title}</h2>
+      <em>{currentDate} at {currentTime}</em>
+      <Link
+        className="block text-blue-600 mt-4"
+        href="https://nextjs.org/docs/app/building-your-application/data-fetching/incremental-static-regeneration">
+        Documentation NextJs: Incremental Static Regeneration (ISR)
+      </Link>
+      <p className="mt-5">{post.content}</p>
+
     </main>
   )
 }

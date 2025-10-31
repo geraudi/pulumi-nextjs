@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import localFont from "next/font/local";
 import "./globals.css";
-import Image from "next/image";
 import Link from "next/link";
+import Header from "@/components/Header";
 
 const geistSans = localFont({
   src: "./fonts/GeistVF.woff",
@@ -30,36 +30,50 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <div
-          className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-10 font-[family-name:var(--font-geist-sans)]">
-          <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start h-[500px] bg-zinc-100x p-8 rounded-2xl">
-            <div className="flex flex-row gap-6">
-              <Image
-                className="dark:invert"
-                src="/next.svg"
-                alt="Next.js logo"
-                width={180}
-                height={38}
-                priority
-              />
-
-              <p className="text-5xl">+</p>
-              <Image src="/open-next-logo.svg" alt="Open Next logo" width={200} height={50} />
-              <p className="text-5xl">+</p>
-              <Image src="/pulumi-logo.svg" alt="Pulumi logo" width={200} height={50} />
-              <p className="text-5xl">+</p>
-              <Image src="/aws-logo.svg" alt="AWS logo" width={100} height={40} />
-            </div>
-            {children}
-          </main>
-          <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">
+        <div className="min-h-screen flex flex-col">
+          <header className="w-full py-8 px-8 sm:px-10 flex justify-center">
+            <Header />
+          </header>
+          <div className="flex gap-4 items-center flex-col sm:flex-row justify-center">
             <Link
-              className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-              href="/"
+              className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:min-w-44"
+              href="/fetching"
               rel="noopener noreferrer"
             >
-              ↩︎ Home
-            </Link> | v1.0
+              Fetching data from an external API
+            </Link>
+            <Link
+              className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:min-w-44"
+              href="/blog/1"
+              rel="noopener noreferrer"
+            >
+              Incremental Static Regeneration (ISR) example
+            </Link>
+            <div>
+              <Link
+                className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:min-w-44"
+                href="/api"
+                rel="noopener noreferrer"
+              >
+                Route handler (API)
+              </Link>
+            </div>
+          </div>
+          <main className="flex-1 w-full px-8 pb-8 sm:px-10">
+            <div className="h-full bg-zinc-100x p-8 rounded-2xl">
+              {children}
+            </div>
+          </main>
+          <footer className="w-full py-8 px-8 sm:px-10">
+            <div className="flex gap-6 flex-wrap items-center justify-center">
+              <Link
+                className="flex items-center gap-2 hover:underline hover:underline-offset-4"
+                href="/"
+                rel="noopener noreferrer"
+              >
+                ↩︎ Home
+              </Link> | v1.2
+            </div>
           </footer>
         </div>
       </body>

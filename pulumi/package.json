@@ -2,16 +2,16 @@
     "name": "pulumi-nextjs",
     "main": "index.ts",
     "devDependencies": {
-        "@types/glob": "^8.1.0",
-        "@types/mime": "^2.0.0",
-        "@types/node": "^18.19.54",
-        "typescript": "^5.0.0"
+        "@types/glob": "^9.0.0",
+        "@types/mime": "^4.0.0",
+        "@types/node": "^24.9.2",
+        "typescript": "^5.9.3"
     },
     "dependencies": {
-        "@pulumi/aws": "^6.54.2",
-        "@pulumi/pulumi": "^3.113.0",
+        "@pulumi/aws": "^7.10.0",
+        "@pulumi/pulumi": "^3.205.0",
         "archiver": "^7.0.1",
-        "glob": "^11.0.0",
-        "mime": "^2.6.0"
+        "glob": "^11.0.3",
+        "mime": "^4.1.0"
     }
 }
