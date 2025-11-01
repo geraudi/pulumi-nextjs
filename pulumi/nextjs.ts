@@ -81,7 +81,7 @@ export class NextJsSite extends pulumi.ComponentResource {
 			s3: s3Origin,
 			default: defaultOrigin,
 			imageOptimizer: imageOrigin,
-			// ...restOrigins
+			"fetching-page": fetchingPageOrigin,
 		} = this.openNextOutput.origins;
 
 		const originAccessIdentity = new aws.cloudfront.OriginAccessIdentity(
@@ -119,6 +119,10 @@ export class NextJsSite extends pulumi.ComponentResource {
 			"image-optimizer",
 			imageOrigin as OpenNextFunctionOrigin,
 		);
+		const fetchingPageFunctionUrl = this.createFunctionOrigin(
+			"fetching-page",
+			fetchingPageOrigin as OpenNextFunctionOrigin,
+		);
 
 		return [
 			{
@@ -146,6 +150,19 @@ export class NextJsSite extends pulumi.ComponentResource {
 			{
 				originId: "imageOptimizer",
 				domainName: imageFunctionUrl.functionUrl.apply(
+					(url) => url.split("//")[1].split("/")[0],
+				),
+				customOriginConfig: {
+					httpPort: 80,
+					httpsPort: 443,
+					originProtocolPolicy: "https-only",
+					originReadTimeout: 10,
+					originSslProtocols: ["TLSv1.2"],
+				},
+			},
+			{
+				originId: "fetching-page",
+				domainName: fetchingPageFunctionUrl.functionUrl.apply(
 					(url) => url.split("//")[1].split("/")[0],
 				),
 				customOriginConfig: {

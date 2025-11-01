@@ -49,7 +49,7 @@ export default async function Page({
 
   return (
     <main>
-      <h1 className="text-4xl font-bold mb-10">Incremental Static Regeneration (ISR) example</h1>
+      <h1 className="text-4xl font-bold mb-10">Static Site Generation (SSG) + Incremental Static Regeneration (ISR) example</h1>
       <h2 className="text-2xl font-bold">{post.title}</h2>
       <em>{currentDate} at {currentTime}</em>
       <Link

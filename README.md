@@ -18,11 +18,8 @@ This project deploys a Next.js application using a serverless architecture on AW
 - ✅ **Next.js 16** support with latest features
 - ✅ **OpenNext v3** integration for AWS optimization
 - ✅ **TypeScript** throughout the stack
-- ✅ **Automatic CloudFront invalidation**
 - ✅ **ISR (Incremental Static Regeneration)** support
 - ✅ **Image optimization** with Lambda
-- ✅ **Secure by default** with proper IAM policies
-- ✅ **Cost-optimized** with pay-per-use resources
 
 ## 📋 Prerequisites
 
@@ -97,24 +94,9 @@ After deployment, Pulumi will output the CloudFront URL where your application i
 
 ## ⚙️ Configuration
 
-### Environment Variables
-
-You can pass environment variables to your Next.js application:
-
-```typescript
-// pulumi/index.ts
-const site = new NextJsSite("my-site", {
-  path: "../nextjs-app",
-  environment: {
-    DATABASE_URL: "your-database-url",
-    API_KEY: "your-api-key",
-  },
-});
-```
-
 ### OpenNext Configuration
 
-Customize the OpenNext build in `nextjs-app/open-next.config.ts`:
+Customize the OpenNext build in `nextjs-app/open-next.config.ts`. See the [OpenNext configuration documentation](https://opennext.js.org/aws/config) for all available options:
 
 ```typescript
 import type { OpenNextConfig } from "@opennextjs/aws";
@@ -160,12 +142,6 @@ cd pulumi
 pulumi destroy
 ```
 
-## 📊 Monitoring and Logs
-
-- **CloudWatch Logs**: Lambda function logs are automatically sent to CloudWatch
-- **CloudFront Metrics**: Monitor CDN performance in AWS Console
-- **DynamoDB Metrics**: Track ISR cache performance
-
 ## 💰 Cost Optimization
 
 This setup is designed to be cost-effective:
@@ -176,43 +152,9 @@ This setup is designed to be cost-effective:
 - **DynamoDB**: On-demand billing for ISR cache
 - **SQS**: Pay per message for revalidation queue
 
-## 🔒 Security
-
-- S3 bucket is private with CloudFront Origin Access Identity
-- Lambda functions have minimal IAM permissions
-- All resources follow AWS security best practices
-
-## 🐛 Troubleshooting
-
-### Common Issues
-
-1. **Build fails**: Ensure Node.js version compatibility (v18+)
-2. **Deployment fails**: Check AWS credentials and permissions
-3. **404 errors**: Verify OpenNext build completed successfully
-4. **Slow performance**: Check CloudFront cache settings
-5. **Lambda packaging issues**: Use npm instead of pnpm - pnpm's symlinks can break Lambda packaging
-
-### Debug Commands
-
-```bash
-# Check OpenNext output
-ls -la nextjs-app/.open-next/
-
-# Validate Pulumi configuration
-cd pulumi && pulumi config
-
-# Check AWS credentials
-aws sts get-caller-identity
-```
-
 ## 📚 References
 
 - [OpenNext Documentation](https://opennext.js.org/)
 - [Pulumi AWS Guide](https://www.pulumi.com/docs/clouds/aws/)
 - [Next.js Deployment](https://nextjs.org/docs/deployment)
 - [AWS CloudFront](https://aws.amazon.com/cloudfront/)
-
-
-## 📄 License
-
-This project is licensed under the MIT License - see the LICENSE file for details.
