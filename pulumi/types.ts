@@ -8,6 +8,29 @@ export type OpenNextFunctionOrigin = {
   streaming?: boolean;
 } & BaseFunction;
 
+// Pulumi Function Configuration Types
+export interface LambdaSettings {
+  /** Memory allocation in MB (128-10240) */
+  memory?: number;
+  /** Timeout in seconds (1-900 for Lambda, 1-30 for Lambda@Edge) */
+  timeout?: number;
+  /** Lambda runtime version */
+  runtime?: string;
+  /** Environment variables specific to this function */
+  environment?: Record<string, string>;
+}
+
+export interface PulumiFunctionConfig {
+  [functionName: string]: LambdaSettings;
+}
+
+export interface ResolvedFunctionSettings {
+  memory: number;
+  timeout: number;
+  runtime: string;
+  environment: Record<string, string>;
+}
+
 type OpenNextECSOrigin = {
   type: "ecs";
   bundle: string;
@@ -31,7 +54,6 @@ type OpenNextOrigins =
   | OpenNextFunctionOrigin
   | OpenNextECSOrigin
   | OpenNextS3Origin;
-
 
 export interface OpenNextOutput {
   edgeFunctions: {
