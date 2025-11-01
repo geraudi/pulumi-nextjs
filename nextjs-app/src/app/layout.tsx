@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import localFont from "next/font/local";
 import "./globals.css";
 import Link from "next/link";
-import Header from "@/components/Header";
+import AppHeader from "@/components/app-header";
 
 const geistSans = localFont({
   src: "./fonts/GeistVF.woff",
@@ -31,16 +31,14 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         <div className="min-h-screen flex flex-col">
-          <header className="w-full py-8 px-8 sm:px-10 flex justify-center">
-            <Header />
-          </header>
+          <AppHeader />
           <div className="flex gap-4 items-center flex-col sm:flex-row justify-center">
             <Link
               className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:min-w-44"
               href="/fetching"
               rel="noopener noreferrer"
             >
-              Fetching data from an external API
+              Partial Rendering (PPR) example
             </Link>
             <Link
               className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:min-w-44"
@@ -72,7 +70,8 @@ export default function RootLayout({
                 rel="noopener noreferrer"
               >
                 ↩︎ Home
-              </Link> | v1.2
+              </Link>{" "}
+              | v1.2
             </div>
           </footer>
         </div>

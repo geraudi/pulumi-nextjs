@@ -5,7 +5,9 @@
   "scripts": {
     "dev": "next dev --turbopack",
     "build": "next build",
-    "build:open-next": "open-next build",
+    "build:open-next": "open-next build && node fix-symlinks.js",
+    "build:open-next-only": "open-next build",
+    "fix-symlinks": "node fix-symlinks.js",
     "start": "next start",
     "lint": "next lint"
   },

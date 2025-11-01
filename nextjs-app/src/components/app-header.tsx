@@ -1,6 +1,6 @@
 import Image from "next/image";
 
-export default function Header() {
+export default function AppHeader() {
     return (
         <header className="flex flex-col gap-8 items-center sm:items-start">
             <div className="flex flex-row gap-6">
