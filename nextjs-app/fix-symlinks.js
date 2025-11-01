@@ -30,7 +30,6 @@ function fixSymlinks() {
           console.log(`✗ Fixing broken symlink: ${file}`);
 
           // Find the actual binary in node_modules
-          const targetBasename = path.basename(target);
           const nodeModulesDir = path.join(binDir, "..");
 
           // Look for the actual file

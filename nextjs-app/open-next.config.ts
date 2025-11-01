@@ -14,6 +14,13 @@ const config = {
     "fetching-page": {
       routes: ["app/fetching/page"],
       patterns: ["fetching"],
+      override: {
+        wrapper: "aws-lambda-streaming",
+        converter: "aws-apigw-v2",
+        queue: "sqs-lite",
+        incrementalCache: "s3-lite",
+        tagCache: "dynamodb-lite",
+      },
     },
   },
 
