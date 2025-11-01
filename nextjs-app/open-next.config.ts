@@ -11,7 +11,7 @@ const config = {
     },
   },
   functions: {
-    "fetching-page": {
+    fetchingPage: {
       routes: ["app/fetching/page"],
       patterns: ["fetching"],
     },
