@@ -72,7 +72,7 @@ cd ../pulumi
 pulumi up
 ```
 
-> **Note about `fix-symlinks.js`**: This project includes an automated fix for a known Node.js symlink bug that affects OpenNext's image optimization function. OpenNext has a workaround for certain Node.js versions, but some affected versions (like v24.4.1) are not included in the `AFFECTED_NODE_VERSIONS` list. The `npm run build:open-next` command automatically runs the symlink fix after the OpenNext build to ensure proper deployment.
+> **Note about `fix-symlinks.js`**: This project includes an automated fix for a known Node.js symlink bug ([Node.js Issue #59168](https://github.com/nodejs/node/issues/59168)) that affects OpenNext's image optimization function. OpenNext has a workaround for certain Node.js versions, but some affected versions (like v24.4.1) are not included in the `AFFECTED_NODE_VERSIONS` list. The `npm run build:open-next` command automatically runs the symlink fix after the OpenNext build to ensure proper deployment.
 
 ### 5. Access Your Application
 
