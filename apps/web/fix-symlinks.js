@@ -1,5 +1,7 @@
 #!/usr/bin/env node
 
+// [Node.js Issue #59168](https://github.com/nodejs/node/issues/59168)
+
 const fs = require("node:fs");
 const path = require("node:path");
 
@@ -30,7 +32,6 @@ function fixSymlinks() {
           console.log(`✗ Fixing broken symlink: ${file}`);
 
           // Find the actual binary in node_modules
-          const targetBasename = path.basename(target);
           const nodeModulesDir = path.join(binDir, "..");
 
           // Look for the actual file

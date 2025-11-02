@@ -62,14 +62,32 @@ export class NextJsStorage extends pulumi.ComponentResource {
     basePath: string,
     copy: OpenNextS3OriginCopy,
   ): void {
+    const sourceDir = path.resolve(basePath, copy.from);
+
+    // Check if source directory exists
+    if (!require("fs").existsSync(sourceDir)) {
+      console.warn(
+        `Warning: Source directory ${sourceDir} does not exist, skipping...`,
+      );
+      return;
+    }
+
     const files = glob.sync("**", {
-      cwd: path.resolve(basePath, copy.from),
+      cwd: sourceDir,
       dot: true,
       nodir: true,
       follow: true,
     });
 
     for (const file of files) {
+      const filePath = path.resolve(sourceDir, file);
+
+      // Check if individual file exists (handles broken symlinks and missing files)
+      if (!require("fs").existsSync(filePath)) {
+        console.warn(`Warning: File ${filePath} does not exist, skipping...`);
+        continue;
+      }
+
       const cacheControl = copy.cached
         ? "public,max-age=31536000,immutable"
         : "public,max-age=0,s-maxage=31536000,must-revalidate";
@@ -81,9 +99,7 @@ export class NextJsStorage extends pulumi.ComponentResource {
         {
           bucket: this.bucket.id,
           key,
-          source: new pulumi.asset.FileAsset(
-            path.resolve(basePath, copy.from, file),
-          ),
+          source: new pulumi.asset.FileAsset(filePath),
           cacheControl,
           contentType: mime.getType(file) || undefined,
         },

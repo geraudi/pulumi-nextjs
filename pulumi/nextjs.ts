@@ -36,7 +36,7 @@ export class NextJsSite extends pulumi.ComponentResource {
   ) {
     super("cloud:index:NextJsSite", name, {}, opts);
 
-    this.path = args.path ?? ".";
+    this.path = args.path ?? "../apps/web";
     this.environment = args.environment ?? {};
     this.name = name;
     this.region = "us-east-1";

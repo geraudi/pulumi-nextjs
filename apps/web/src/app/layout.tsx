@@ -71,7 +71,7 @@ export default function RootLayout({
               >
                 ↩︎ Home
               </Link>{" "}
-              | v1.2
+              | v2.0
             </div>
           </footer>
         </div>
