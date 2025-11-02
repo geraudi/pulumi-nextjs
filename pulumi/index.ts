@@ -1,7 +1,7 @@
 import { NextJsSite } from "./nextjs";
 
 const site = new NextJsSite("nextjs-pulumi", {
-  path: "../nextjs-app",
+  path: "../apps/web",
 });
 
 export const url = site.url;

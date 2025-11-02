@@ -1,15 +1,16 @@
 {
-  "name": "my-app",
+  "name": "@monorepo/web",
   "version": "0.1.0",
   "private": true,
   "scripts": {
     "dev": "next dev --turbopack",
-    "build": "next build",
-    "build:open-next": "open-next build && node fix-symlinks.js",
-    "build:open-next-only": "open-next build",
-    "fix-symlinks": "node fix-symlinks.js",
     "start": "next start",
-    "lint": "next lint"
+    "build": "next build",
+    "openbuild": "open-next build && node scripts/fix-pnpm-symlinks.js",
+    "verify": "node ../../scripts/turbo-verify-lambda.js",
+    "deploy": "echo 'Web app: Deploy handled by Pulumi package'",
+    "lint": "next lint",
+    "clean": "rm -rf .turbo node_modules .next .open-next"
   },
   "dependencies": {
     "next": "^16.0.1",
@@ -23,7 +24,7 @@
     "@types/node": "^24.9.2",
     "@types/react": "^19.2.2",
     "@types/react-dom": "^19.2.2",
-    "eslint": "^9.38.0",
+    "eslint": "^9.39.0",
     "eslint-config-next": "16.0.1",
     "postcss": "^8.5.6",
     "tailwindcss": "^4.1.16",

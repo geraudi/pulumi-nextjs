@@ -3,6 +3,8 @@
 bin/
 .open-next
 
+.turbo
+
 # dependencies
 node_modules
 .pnp
