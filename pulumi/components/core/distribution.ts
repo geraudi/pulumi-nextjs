@@ -1,6 +1,6 @@
 import * as aws from "@pulumi/aws";
 import * as pulumi from "@pulumi/pulumi";
-import type { DistributionArgs } from "./shared/types";
+import type { DistributionArgs } from "../../types";
 
 export class NextJsDistribution extends pulumi.ComponentResource {
   public distribution: aws.cloudfront.Distribution;
@@ -35,7 +35,7 @@ export class NextJsDistribution extends pulumi.ComponentResource {
       `${args.name}-bucket-policy`,
       {
         bucket: args.bucketRegionalDomainName.apply(
-          (domain) => domain.split(".")[0],
+          (domain: string) => domain.split(".")[0],
         ), // Extract bucket name
         policy: pulumi.interpolate`{
           "Version": "2012-10-17",
@@ -81,28 +81,58 @@ export class NextJsDistribution extends pulumi.ComponentResource {
     // The managed cache policy ID for `CACHING_OPTIMIZED`
     const staticCachePolicyId = "658327ea-f89d-4fab-a63d-7e88639e58f6";
     const serverCachePolicy = this.createServerCachePolicy(args.name);
+    const apiCachePolicy = this.createApiCachePolicy(args.name);
 
     // Referencing the managed origin request policy (ALL_VIEWER_EXCEPT_HOST_HEADER)
     const originRequestPolicyId = "b689b0a8-53d0-40ab-baf2-68738e2966ac";
 
     const orderedCacheBehaviors = args.openNextOutput.behaviors
-      .filter((b) => b.pattern !== "*")
-      .map((b) => {
+      .filter((b: { pattern: string }) => b.pattern !== "*")
+      .map((b: { pattern: string; origin?: string; edgeFunction?: string }) => {
         // Origin IDs should match exactly with OpenNext output
         const originId = b.origin as string;
+
+        // Determine cache policy based on origin type and pattern
+        let cachePolicyId: pulumi.Output<string> | string;
+        if (b.origin === "s3") {
+          cachePolicyId = staticCachePolicyId;
+        } else if (
+          originId.toLowerCase().includes("edge") ||
+          b.pattern.startsWith("api/")
+        ) {
+          // Use API cache policy for edge functions and API routes
+          cachePolicyId = apiCachePolicy.id;
+        } else {
+          cachePolicyId = serverCachePolicy.id;
+        }
 
         return this.makeBehaviour({
           pathPattern: b.pattern,
           origin: originId,
-          cachePolicyId:
-            b.origin === "s3" ? staticCachePolicyId : serverCachePolicy.id,
+          cachePolicyId,
           functionArn: this.cloudfrontFunction.arn,
           ...(b.origin !== "s3" ? { originRequestPolicyId } : {}),
+          // Allow more HTTP methods for API routes
+          ...(originId.toLowerCase().includes("edge") ||
+          b.pattern.startsWith("api/")
+            ? {
+                allowedMethods: [
+                  "DELETE",
+                  "GET",
+                  "HEAD",
+                  "OPTIONS",
+                  "PATCH",
+                  "POST",
+                  "PUT",
+                ],
+                cachedMethods: ["GET", "HEAD"],
+              }
+            : {}),
         });
       });
 
     const defaultOpenNextOutputBehavior = args.openNextOutput.behaviors.find(
-      (b) => b.pattern === "*",
+      (b: { pattern: string }) => b.pattern === "*",
     );
 
     // Origin ID should match exactly with OpenNext output
@@ -165,7 +195,7 @@ export class NextJsDistribution extends pulumi.ComponentResource {
       origins.push({
         originId: key,
         domainName: functionUrl.apply(
-          (url) => url.split("//")[1].split("/")[0],
+          (url: string) => url.split("//")[1].split("/")[0],
         ),
         customOriginConfig: {
           httpPort: 80,
@@ -216,17 +246,56 @@ export class NextJsDistribution extends pulumi.ComponentResource {
     );
   }
 
+  private createApiCachePolicy(name: string): aws.cloudfront.CachePolicy {
+    return new aws.cloudfront.CachePolicy(
+      `${name}-api-cache-policy`,
+      {
+        comment: `API routes cache policy for edge functions`,
+        defaultTtl: 0, // No default caching for APIs
+        maxTtl: 31536000,
+        minTtl: 0,
+        parametersInCacheKeyAndForwardedToOrigin: {
+          cookiesConfig: {
+            cookieBehavior: "all", // Forward all cookies for API routes
+          },
+          enableAcceptEncodingBrotli: true,
+          enableAcceptEncodingGzip: true,
+          headersConfig: {
+            headerBehavior: "whitelist",
+            headers: {
+              items: [
+                "authorization",
+                "content-type",
+                "accept",
+                "user-agent",
+                "referer",
+                "x-forwarded-for",
+                "cloudfront-viewer-country",
+              ],
+            },
+          },
+          queryStringsConfig: {
+            queryStringBehavior: "all", // Forward all query strings for APIs
+          },
+        },
+      },
+      { parent: this },
+    );
+  }
+
   private makeBehaviour(args: {
     pathPattern: string;
     origin: string;
     cachePolicyId: pulumi.Output<string> | string;
     originRequestPolicyId?: string;
     functionArn: pulumi.Input<string>;
+    allowedMethods?: string[];
+    cachedMethods?: string[];
   }): aws.types.input.cloudfront.DistributionOrderedCacheBehavior {
     return {
       viewerProtocolPolicy: "redirect-to-https",
-      allowedMethods: ["GET", "HEAD", "OPTIONS"],
-      cachedMethods: ["GET", "HEAD", "OPTIONS"],
+      allowedMethods: args.allowedMethods || ["GET", "HEAD", "OPTIONS"],
+      cachedMethods: args.cachedMethods || ["GET", "HEAD", "OPTIONS"],
       cachePolicyId: args.cachePolicyId,
       ...(args.originRequestPolicyId
         ? {
