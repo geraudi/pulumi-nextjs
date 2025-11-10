@@ -1,12 +1,12 @@
 import * as path from "node:path";
 import * as aws from "@pulumi/aws";
 import * as pulumi from "@pulumi/pulumi";
-import type { OpenNextFunctionOrigin } from "../types";
-import type { FunctionsArgs } from "./shared/types";
+import type { FunctionsArgs, OpenNextFunctionOrigin } from "../../types";
+import { createLoggingPolicy } from "../shared/iam";
 import {
   attachBasicLambdaExecutionRole,
   createLambdaRole,
-} from "./shared/utils";
+} from "../shared/utils";
 
 export class NextJsFunctions extends pulumi.ComponentResource {
   public functions: Map<string, aws.lambda.Function> = new Map();
@@ -26,7 +26,7 @@ export class NextJsFunctions extends pulumi.ComponentResource {
     const {
       default: defaultOrigin,
       imageOptimizer: imageOrigin,
-      fetchingPage: fetchingPageOrigin,
+      ...customOrigins
     } = args.openNextOutput.origins;
 
     // Create function origins
@@ -38,9 +38,12 @@ export class NextJsFunctions extends pulumi.ComponentResource {
       this.createFunctionOrigin("imageOptimizer", imageOrigin, args);
     }
 
-    if (fetchingPageOrigin && fetchingPageOrigin.type === "function") {
-      this.createFunctionOrigin("fetchingPage", fetchingPageOrigin, args);
-    }
+    // Splitted servers
+    Object.entries(customOrigins).forEach(([key, origin]) => {
+      if (origin && origin.type === "function") {
+        this.createFunctionOrigin(key, origin, args);
+      }
+    });
   }
 
   private createFunctionOrigin(
@@ -57,7 +60,7 @@ export class NextJsFunctions extends pulumi.ComponentResource {
         runtime: aws.lambda.Runtime.NodeJS20dX,
         environment: args.environment,
         timeout: 15,
-        memorySize: 1024,
+        memorySize: 256,
         role: role.arn,
         code: new pulumi.asset.FileArchive(path.join(args.path, origin.bundle)),
       },
@@ -85,8 +88,19 @@ export class NextJsFunctions extends pulumi.ComponentResource {
     key: string,
     args: FunctionsArgs,
   ): void {
-    // Attach AWSLambdaBasicExecutionRole policy
+    // Attach AWSLambdaBasicExecutionRole policy (includes basic CloudWatch logging)
     attachBasicLambdaExecutionRole(`${args.name}-${key}`, role, this);
+
+    // Add explicit CloudWatch logging policy for additional permissions
+    const loggingPolicy = createLoggingPolicy(`${args.name}-${key}`, this);
+    new aws.iam.RolePolicyAttachment(
+      `${args.name}-${key}-logging-policy-attachment`,
+      {
+        policyArn: loggingPolicy.arn,
+        role: role.name,
+      },
+      { parent: this },
+    );
 
     new aws.iam.RolePolicyAttachment(
       `${args.name}-${key}-bucket-read-write-role-policy-attachment`,

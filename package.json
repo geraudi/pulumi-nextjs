@@ -6,11 +6,11 @@
     "dev": "turbo dev",
     "lint": "turbo lint",
     "clean": "turbo clean",
-    "openbuild": "turbo openbuild --filter=@monorepo/web",
-    "verify": "turbo verify --filter=@monorepo/web",
-    "deploy:aws": "turbo verify --filter=@monorepo/web && turbo deploy --filter=@monorepo/pulumi",
-    "deploy:preview": "turbo verify --filter=@monorepo/web && turbo preview --filter=@monorepo/pulumi",
-    "destroy": "turbo destroy --filter=@monorepo/pulumi"
+    "openbuild": "turbo openbuild",
+    "verify": "turbo verify",
+    "deploy:aws": "turbo deploy",
+    "deploy:preview": "turbo preview",
+    "destroy": "turbo destroy"
   },
   "devDependencies": {
     "turbo": "^2.6.0"

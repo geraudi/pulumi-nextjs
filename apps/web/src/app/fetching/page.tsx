@@ -2,6 +2,7 @@ import { Suspense } from "react";
 import Joke from "@/components/joke";
 
 export default async function FetchingData() {
+  console.log("fetching");
   return (
     <div>
       <h1 className="font-bold text-3xl">Partial Rendering (PPR) example.</h1>

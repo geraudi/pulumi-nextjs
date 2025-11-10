@@ -1,9 +1,9 @@
 import * as path from "node:path";
 import * as aws from "@pulumi/aws";
 import * as pulumi from "@pulumi/pulumi";
-import { IamPolicyFactory } from "./shared/iam";
-import type { DatabaseArgs } from "./shared/types";
-import { createLambdaRole } from "./shared/utils";
+import type { DatabaseArgs } from "../../types";
+import { createLoggingPolicy, createTablePolicy } from "../shared/iam";
+import { createLambdaRole } from "../shared/utils";
 
 export class NextJsDatabase extends pulumi.ComponentResource {
   public table: aws.dynamodb.Table;
@@ -17,11 +17,7 @@ export class NextJsDatabase extends pulumi.ComponentResource {
     super("nextjs:database:Database", name, {}, opts);
 
     this.table = this.createRevalidationTable(args);
-    this.tablePolicy = IamPolicyFactory.createTablePolicy(
-      args.name,
-      this.table.arn,
-      this,
-    );
+    this.tablePolicy = createTablePolicy(args.name, this.table.arn, this);
   }
 
   private createRevalidationTable(args: DatabaseArgs): aws.dynamodb.Table {
@@ -75,7 +71,7 @@ export class NextJsDatabase extends pulumi.ComponentResource {
 
     const role = createLambdaRole(`${args.name}-revalidation-table`, this);
 
-    const loggingPolicy = IamPolicyFactory.createLoggingPolicy(
+    const loggingPolicy = createLoggingPolicy(
       `${args.name}-revalidation-table-lambda`,
       this,
     );

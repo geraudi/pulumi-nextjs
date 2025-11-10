@@ -3,10 +3,9 @@ import * as aws from "@pulumi/aws";
 import * as pulumi from "@pulumi/pulumi";
 import * as glob from "glob";
 import mime from "mime";
-import type { OpenNextS3OriginCopy } from "../types";
-import { IamPolicyFactory } from "./shared/iam";
-import type { StorageArgs } from "./shared/types";
-import { computeHexHash } from "./shared/utils";
+import type { OpenNextS3OriginCopy, StorageArgs } from "../../types";
+import { createBucketPolicy } from "../shared/iam";
+import { computeHexHash } from "../shared/utils";
 
 export class NextJsStorage extends pulumi.ComponentResource {
   public bucket: aws.s3.Bucket;
@@ -20,11 +19,7 @@ export class NextJsStorage extends pulumi.ComponentResource {
     super("nextjs:storage:Storage", name, {}, opts);
 
     this.bucket = this.createBucket(args.name);
-    this.bucketPolicy = IamPolicyFactory.createBucketPolicy(
-      args.name,
-      this.bucket.arn,
-      this,
-    );
+    this.bucketPolicy = createBucketPolicy(args.name, this.bucket.arn, this);
 
     // Add files to bucket from OpenNext output
     for (const copy of args.openNextOutput.origins.s3.copy) {

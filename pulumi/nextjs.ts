@@ -1,16 +1,18 @@
 import { readFileSync } from "node:fs";
 import * as path from "node:path";
 import * as pulumi from "@pulumi/pulumi";
-import { NextJsDatabase } from "./components/database";
-import { NextJsDistribution } from "./components/distribution";
-import { NextJsFunctions } from "./components/functions";
-import { NextJsQueue } from "./components/queue";
-import { NextJsStorage } from "./components/storage";
-import type { OpenNextOutput } from "./types";
+import { NextJsDistribution } from "./components/core/distribution";
+import { NextJsFunctions } from "./components/core/functions";
+import { NextJsStorage } from "./components/core/storage";
+import { NextJsDatabase } from "./components/isr-revalidation/database";
+import { NextJsQueue } from "./components/isr-revalidation/queue";
+import { NextJsWarmer } from "./components/warmer/warmer";
+import type { OpenNextOutput, WarmerConfig } from "./types";
 
 export interface NexJsSiteArgs {
   path?: string;
   environment?: Record<string, pulumi.Input<string>>;
+  warmer?: WarmerConfig;
 }
 
 export class NextJsSite extends pulumi.ComponentResource {
@@ -20,6 +22,7 @@ export class NextJsSite extends pulumi.ComponentResource {
   private queue: NextJsQueue;
   private functions: NextJsFunctions;
   private distribution: NextJsDistribution;
+  private warmer?: NextJsWarmer;
 
   private readonly name: string;
   private readonly region: string;
@@ -113,6 +116,21 @@ export class NextJsSite extends pulumi.ComponentResource {
       },
       { parent: this },
     );
+
+    // Create warmer if explicitly enabled
+    if (args.warmer?.enabled === true) {
+      this.warmer = new NextJsWarmer(
+        `${name}-warmer`,
+        {
+          name,
+          openNextOutput: this.openNextOutput,
+          path: this.path,
+          functions: this.functions.functions,
+          config: args.warmer,
+        },
+        { parent: this },
+      );
+    }
 
     this.domainName = this.distribution.distribution.domainName;
     this.url = pulumi.interpolate`https://${this.distribution.distribution.domainName}`;

@@ -1,14 +1,26 @@
 # NextJS Site Components
 
-This directory contains the refactored NextJS site components, organized by AWS service and functionality.
+This directory contains the refactored NextJS site components, organized by functionality and AWS service architecture.
 
 ## Architecture
 
-The original monolithic `NextJsSite` class has been split into smaller, focused components:
+The components are organized into three main folders based on the architecture diagram:
 
-### Components
+### 📁 Folder Structure
 
-#### 1. **NextJsStorage** (`storage.ts`)
+```
+components/
+├── core/                    # Core Next.js infrastructure
+├── isr-revalidation/       # ISR and revalidation components
+├── warmer/                 # Lambda warming (not yet implemented)
+└── shared/                 # Shared utilities and IAM policies
+```
+
+### 🎯 Core Components (`core/`)
+
+Essential infrastructure for running Next.js on AWS.
+
+#### **NextJsStorage** (`storage.ts`)
 - **Purpose**: Manages S3 bucket and static asset storage
 - **Resources**: 
   - S3 Bucket with public access blocking
@@ -19,7 +31,34 @@ The original monolithic `NextJsSite` class has been split into smaller, focused 
   - Uploads static files from OpenNext build output
   - Manages bucket access policies
 
-#### 2. **NextJsDatabase** (`database.ts`)
+#### **NextJsFunctions** (`functions.ts`)
+- **Purpose**: Manages Lambda functions for Next.js runtime
+- **Resources**:
+  - Lambda functions (default, image-optimizer, fetchingPage)
+  - Lambda function URLs
+  - IAM roles and policies
+- **Responsibilities**:
+  - Creates Lambda functions from OpenNext bundles
+  - Sets up function URLs with streaming support
+  - Manages function permissions
+
+#### **NextJsDistribution** (`distribution.ts`)
+- **Purpose**: Manages CloudFront distribution and CDN configuration
+- **Resources**:
+  - CloudFront Distribution
+  - CloudFront Function
+  - Origin Access Identity
+  - Cache policies
+- **Responsibilities**:
+  - Creates CloudFront distribution with origins
+  - Sets up cache behaviors and policies
+  - Manages origin access and security
+
+### 🔄 ISR Revalidation Components (`isr-revalidation/`)
+
+Components for Incremental Static Regeneration and cache revalidation.
+
+#### **NextJsDatabase** (`database.ts`)
 - **Purpose**: Manages DynamoDB table for revalidation data
 - **Resources**:
   - DynamoDB Table with GSI
@@ -31,7 +70,7 @@ The original monolithic `NextJsSite` class has been split into smaller, focused 
   - Sets up initialization Lambda function
   - Manages database access policies
 
-#### 3. **NextJsQueue** (`queue.ts`)
+#### **NextJsQueue** (`queue.ts`)
 - **Purpose**: Manages SQS queue for revalidation processing
 - **Resources**:
   - SQS FIFO Queue
@@ -42,28 +81,21 @@ The original monolithic `NextJsSite` class has been split into smaller, focused 
   - Sets up queue consumer Lambda
   - Manages queue access policies
 
-#### 4. **NextJsFunctions** (`functions.ts`)
-- **Purpose**: Manages Lambda functions for Next.js runtime
-- **Resources**:
-  - Lambda functions (default, image-optimizer, fetchingPage)
-  - Lambda function URLs
-  - IAM roles and policies
-- **Responsibilities**:
-  - Creates Lambda functions from OpenNext bundles
-  - Sets up function URLs with streaming support
-  - Manages function permissions
+### 🔥 Warmer Components (`warmer/`)
 
-#### 5. **NextJsDistribution** (`distribution.ts`)
-- **Purpose**: Manages CloudFront distribution and CDN configuration
+Components for keeping Lambda functions warm to reduce cold starts.
+
+#### **NextJsWarmer** (`warmer.ts`)
+- **Purpose**: Keeps Lambda functions warm to reduce cold start latency
 - **Resources**:
-  - CloudFront Distribution
-  - CloudFront Function
-  - Origin Access Identity
-  - Cache policies
+  - EventBridge scheduled rule
+  - Lambda permissions for EventBridge
+  - Event targets for each function
 - **Responsibilities**:
-  - Creates CloudFront distribution with origins
-  - Sets up cache behaviors and policies
-  - Manages origin access and security
+  - Creates periodic warming schedule (default: every 5 minutes)
+  - Invokes functions with warming payload
+  - Supports configurable concurrency
+  - Manages EventBridge permissions
 
 ### Shared Utilities
 

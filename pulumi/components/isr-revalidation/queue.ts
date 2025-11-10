@@ -1,9 +1,9 @@
 import * as path from "node:path";
 import * as aws from "@pulumi/aws";
 import * as pulumi from "@pulumi/pulumi";
-import { IamPolicyFactory } from "./shared/iam";
-import type { QueueArgs } from "./shared/types";
-import { createLambdaRole } from "./shared/utils";
+import type { QueueArgs } from "../../types";
+import { createLoggingPolicy, createQueuePolicy } from "../shared/iam";
+import { createLambdaRole } from "../shared/utils";
 
 export class NextJsQueue extends pulumi.ComponentResource {
   public queue: aws.sqs.Queue;
@@ -17,11 +17,7 @@ export class NextJsQueue extends pulumi.ComponentResource {
     super("nextjs:queue:Queue", name, {}, opts);
 
     this.queue = this.createRevalidationQueue(args);
-    this.queuePolicy = IamPolicyFactory.createQueuePolicy(
-      args.name,
-      this.queue.arn,
-      this,
-    );
+    this.queuePolicy = createQueuePolicy(args.name, this.queue.arn, this);
   }
 
   private createRevalidationQueue(args: QueueArgs): aws.sqs.Queue {
@@ -50,7 +46,7 @@ export class NextJsQueue extends pulumi.ComponentResource {
     const role = createLambdaRole(`${args.name}-revalidation-queue`, this);
 
     // Cloudwatch policy
-    const loggingPolicy = IamPolicyFactory.createLoggingPolicy(
+    const loggingPolicy = createLoggingPolicy(
       `${args.name}-revalidation-queue-lambda`,
       this,
     );

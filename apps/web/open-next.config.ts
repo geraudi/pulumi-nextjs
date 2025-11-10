@@ -2,17 +2,36 @@ import type { OpenNextConfig } from "@opennextjs/aws/types/open-next";
 
 export default {
   default: {
+    minify: true,
     override: {
       wrapper: "aws-lambda-streaming",
       converter: "aws-apigw-v2",
       incrementalCache: "s3-lite",
-      queue: "sqs",
+      queue: "sqs-lite",
       tagCache: "dynamodb-lite",
     },
   },
-
-  dangerous: {
-    middlewareHeadersOverrideNextConfigHeaders: true,
+  functions: {
+    // API routes (optimized Node.js runtime)
+    api: {
+      routes: ["app/api/route"],
+      patterns: ["api/*", "api"],
+      override: {
+        wrapper: "aws-lambda-streaming",
+        converter: "aws-apigw-v2",
+      },
+    },
+    fetchingPage: {
+      routes: ["app/fetching/page"],
+      patterns: ["fetching/*", "fetching"],
+      override: {
+        wrapper: "aws-lambda-streaming",
+        converter: "aws-apigw-v2",
+        incrementalCache: "s3-lite",
+        queue: "sqs-lite",
+        tagCache: "dynamodb-lite",
+      },
+    },
   },
 
   imageOptimization: {
