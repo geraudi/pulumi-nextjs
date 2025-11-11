@@ -88,6 +88,8 @@ export interface DistributionArgs extends ComponentArgs {
   bucketRegionalDomainName: pulumi.Output<string>;
   bucketArn: pulumi.Output<string>;
   functionUrls: Map<string, pulumi.Output<string>>;
+  lambdaFunctions: Map<string, aws.lambda.Function>;
+  webAclArn?: pulumi.Output<string>;
 }
 
 export interface WarmerConfig {

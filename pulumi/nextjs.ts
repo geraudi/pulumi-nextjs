@@ -6,6 +6,8 @@ import { NextJsFunctions } from "./components/core/functions";
 import { NextJsStorage } from "./components/core/storage";
 import { NextJsDatabase } from "./components/isr-revalidation/database";
 import { NextJsQueue } from "./components/isr-revalidation/queue";
+import type { WafConfig } from "./components/security/waf";
+import { NextJsWaf } from "./components/security/waf";
 import { NextJsWarmer } from "./components/warmer/warmer";
 import type { OpenNextOutput, WarmerConfig } from "./types";
 
@@ -13,6 +15,7 @@ export interface NexJsSiteArgs {
   path?: string;
   environment?: Record<string, pulumi.Input<string>>;
   warmer?: WarmerConfig;
+  waf?: WafConfig;
 }
 
 export class NextJsSite extends pulumi.ComponentResource {
@@ -23,6 +26,7 @@ export class NextJsSite extends pulumi.ComponentResource {
   private functions: NextJsFunctions;
   private distribution: NextJsDistribution;
   private warmer?: NextJsWarmer;
+  private waf?: NextJsWaf;
 
   private readonly name: string;
   private readonly region: string;
@@ -103,6 +107,11 @@ export class NextJsSite extends pulumi.ComponentResource {
       { parent: this },
     );
 
+    // Create WAF if enabled
+    if (args.waf?.enabled === true) {
+      this.waf = new NextJsWaf(`${name}-waf`, args.waf, { parent: this });
+    }
+
     this.distribution = new NextJsDistribution(
       `${name}-distribution`,
       {
@@ -113,6 +122,8 @@ export class NextJsSite extends pulumi.ComponentResource {
         bucketRegionalDomainName: this.storage.bucket.bucketRegionalDomainName,
         bucketArn: this.storage.bucket.arn,
         functionUrls: this.functions.functionUrls,
+        lambdaFunctions: this.functions.functions,
+        webAclArn: this.waf?.webAcl.arn,
       },
       { parent: this },
     );

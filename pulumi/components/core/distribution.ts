@@ -6,6 +6,7 @@ export class NextJsDistribution extends pulumi.ComponentResource {
   public distribution: aws.cloudfront.Distribution;
   public cloudfrontFunction: aws.cloudfront.Function;
   public originAccessIdentity: aws.cloudfront.OriginAccessIdentity;
+  public originAccessControl: aws.cloudfront.OriginAccessControl;
 
   constructor(
     name: string,
@@ -17,7 +18,9 @@ export class NextJsDistribution extends pulumi.ComponentResource {
     this.originAccessIdentity = this.createOriginAccessIdentity(args.name);
     this.createBucketPolicy(args);
     this.cloudfrontFunction = this.createCloudfrontFunction(args.name);
+    this.originAccessControl = this.createOriginAccessControl(args.name);
     this.distribution = this.createDistribution(args);
+    this.grantLambdaPermissions(args);
   }
 
   private createOriginAccessIdentity(
@@ -71,6 +74,38 @@ export class NextJsDistribution extends pulumi.ComponentResource {
       },
       { parent: this },
     );
+  }
+
+  private createOriginAccessControl(
+    name: string,
+  ): aws.cloudfront.OriginAccessControl {
+    return new aws.cloudfront.OriginAccessControl(
+      `${name}-lambda-oac`,
+      {
+        name: `${name}-lambda-oac`,
+        description: "Origin Access Control for Lambda Function URLs",
+        originAccessControlOriginType: "lambda",
+        signingBehavior: "always",
+        signingProtocol: "sigv4",
+      },
+      { parent: this },
+    );
+  }
+
+  private grantLambdaPermissions(args: DistributionArgs): void {
+    // Grant CloudFront permission to invoke Lambda function URLs using OAC
+    for (const [key, fn] of args.lambdaFunctions) {
+      new aws.lambda.Permission(
+        `${args.name}-${key}-cloudfront-oac-permission`,
+        {
+          action: "lambda:InvokeFunctionUrl",
+          function: fn.arn,
+          principal: "cloudfront.amazonaws.com",
+          sourceArn: this.distribution.arn,
+        },
+        { parent: this },
+      );
+    }
   }
 
   private createDistribution(
@@ -166,7 +201,10 @@ export class NextJsDistribution extends pulumi.ComponentResource {
         },
         viewerCertificate: {
           cloudfrontDefaultCertificate: true,
+          minimumProtocolVersion: "TLSv1.2_2021", // Most secure available option
+          sslSupportMethod: "sni-only", // More cost-effective than vip
         },
+        webAclId: args.webAclArn, // Attach WAF if provided
         origins,
       },
       { parent: this },
@@ -190,7 +228,7 @@ export class NextJsDistribution extends pulumi.ComponentResource {
       },
     ];
 
-    // Add function origins - keys should match exactly with OpenNext output
+    // Add function origins with OAC - keys should match exactly with OpenNext output
     for (const [key, functionUrl] of args.functionUrls) {
       origins.push({
         originId: key,
@@ -204,6 +242,7 @@ export class NextJsDistribution extends pulumi.ComponentResource {
           originReadTimeout: 10,
           originSslProtocols: ["TLSv1.2"],
         },
+        originAccessControlId: this.originAccessControl.id,
       });
     }
 
