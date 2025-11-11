@@ -73,7 +73,7 @@ export class NextJsFunctions extends pulumi.ComponentResource {
       `${args.name}-${key}-origin-lambda-url`,
       {
         functionName: fn.arn,
-        authorizationType: "NONE",
+        authorizationType: "AWS_IAM", // Secured with CloudFront Origin Access Control
         invokeMode: origin.streaming ? "RESPONSE_STREAM" : "BUFFERED",
       },
       { parent: this },

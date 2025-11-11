@@ -2,33 +2,38 @@
 
 Infrastructure-as-code solution for deploying Next.js applications on AWS using Pulumi and OpenNext in a Turbo monorepo with full pnpm support.
 
+> **📚 Learning Project**: This repository is designed for educational purposes to understand how Next.js applications are deployed to AWS infrastructure. For production deployments, consider using [SST (Serverless Stack)](https://sst.dev/) which provides a complete, battle-tested solution with additional features and better developer experience.
+
 ## ⚡ Quick Commands
 
 ```bash
-# Development
+# Start development servers
 pnpm dev        # Start development servers
 
-# Deployment  
-pnpm deploy:aws # Build, verify, and deploy to AWS
+# Build, verify, and deploy to AWS  
+pnpm deploy:aws 
 
-# Other
-pnpm verify     # Verify Lambda packages
-pnpm destroy    # Destroy AWS infrastructure
+# Destroy AWS infrastructure
+pnpm destroy    
 ```
 
 ## 🏗️ Architecture
 
 This project deploys a Next.js application using a serverless architecture on AWS:
 
+### Core Infrastructure
 - **CloudFront Distribution** - Global CDN for fast content delivery
 - **Lambda Functions** - Server-side rendering and API routes
 - **S3 Bucket** - Static asset storage with optimized caching
 - **DynamoDB Table** - ISR (Incremental Static Regeneration) cache
 - **SQS Queue** - Background revalidation processing
 - **IAM Roles & Policies** - Secure resource access
+- **WAF Rules** - Security features like rate limiting and SQL injection protection
+
 
 ## 🚀 Features
 
+### Core Features
 - ✅ **Next.js 16** support with latest features
 - ✅ **OpenNext v3** integration for AWS optimization
 - ✅ **Turbo monorepo** with intelligent caching and task dependencies
@@ -37,6 +42,12 @@ This project deploys a Next.js application using a serverless architecture on AW
 - ✅ **ISR (Incremental Static Regeneration)** support
 - ✅ **Image optimization** with Lambda
 - ✅ **Single command deployment** with automatic verification
+
+### Security Features
+- 🔒 **IAM Authentication** for Lambda Function URLs using CloudFront Origin Access Control (OAC)
+- 🔒 **AWS WAF** integration with configurable rules (rate limiting, SQL injection, XSS protection)
+- 🔒 **TLS 1.2+** enforcement on CloudFront
+- 🔒 **Automatic SigV4 request signing** for secure Lambda invocations
 
 ## 📋 Prerequisites
 
@@ -118,6 +129,35 @@ After deployment, Pulumi will output the CloudFront URL where your application i
 └── package.json               # Root package.json
 ```
 
+## 🔒 Security
+
+This project implements AWS security best practices:
+
+### Lambda Function URL Security
+
+Lambda Function URLs are secured using **CloudFront Origin Access Control (OAC)** with IAM authentication:
+
+- **IAM Authentication**: All Lambda URLs require AWS Signature Version 4 (SigV4)
+- **Origin Access Control**: CloudFront automatically signs requests to Lambda
+- **Direct Access Blocked**: Lambda URLs return 403 Forbidden when accessed directly
+- **Zero Additional Cost**: Built-in AWS feature, no extra charges
+
+### AWS WAF (Web Application Firewall)
+
+Optional WAF protection can be enabled with a simple configuration:
+
+**WAF Features**:
+- ✅ Rate limiting per IP address
+- ✅ AWS Managed Rules (SQL injection, XSS, known exploits)
+- ✅ Custom IP blocking/whitelisting
+- ✅ Geographic blocking by country
+- ✅ CloudWatch metrics and monitoring
+- ✅ Sampled request logging
+
+**Cost**: ~$8/month + $0.60 per million requests
+
+See [docs/waf-configuration.md](docs/waf-configuration.md) for complete configuration guide.
+
 ## ⚙️ Configuration
 
 ### OpenNext Configuration
@@ -197,8 +237,6 @@ This monorepo solves the complex symlink issues between pnpm and OpenNext for AW
 2. **Strategic pnpm Configuration**: Optimized `.npmrc` settings for Lambda compatibility
 3. **Comprehensive Build Process**: Handles the entire pnpm → OpenNext → Lambda pipeline
 
-See [docs/PNPM_OPENNEXT_GUIDE.md](docs/PNPM_OPENNEXT_GUIDE.md) for detailed technical documentation.
-
 ### Quick Fix Commands
 ```bash
 # Fix symlinks manually if needed
@@ -211,21 +249,7 @@ pnpm verify
 find apps/web/.open-next -type l -exec test ! -e {} \; -print
 ```
 
-## 💰 Cost Optimization
-
-This setup is designed to be cost-effective:
-
-- **Lambda**: Pay only for execution time
-- **S3**: Optimized storage classes for static assets
-- **CloudFront**: Free tier includes 1TB of data transfer
-- **DynamoDB**: On-demand billing for ISR cache
-- **SQS**: Pay per message for revalidation queue
-
 ## 📚 Documentation
-
-### Project Documentation
-- [Turbo Workflow Guide](docs/TURBO_WORKFLOW.md) - Complete workflow documentation
-- [pnpm + OpenNext Guide](docs/PNPM_OPENNEXT_GUIDE.md) - Technical deep dive on compatibility
 
 ### External References
 - [OpenNext Documentation](https://opennext.js.org/)
