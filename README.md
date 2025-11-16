@@ -35,6 +35,7 @@ This project deploys a Next.js application using a serverless architecture on AW
 
 ### Core Features
 - ✅ **Next.js 16** support with latest features
+- ✅ **Cache Components** with `"use cache"` and `cacheLife` (see [docs/nextjs-cache-components.md](docs/nextjs-cache-components.md))
 - ✅ **OpenNext v3** integration for AWS optimization
 - ✅ **Turbo monorepo** with intelligent caching and task dependencies
 - ✅ **pnpm workspace** with Lambda-compatible symlink handling
