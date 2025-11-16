@@ -5,12 +5,16 @@ const site = new NextJsSite("nextjs-pulumi", {
   // Warmer is disabled by default
   warmer: {
     enabled: true,
-    schedule: "cron(0/5 9-17 ? * MON-FRI *)", // Every 5 min, 9AM-5PM, weekdays (UTC)
-    concurrency: 1, // (default)
+    schedule: "rate(5 minutes)",
+    concurrency: 1, // Default for functions not specified below
+    functions: {
+      api: { enabled: false },
+      fetchingPage: { concurrency: 2 },
+    },
   },
   // WAF is disabled by default - uncomment to enable
   waf: {
-    enabled: true,
+    enabled: false,
     rateLimit: 2000, // 2000 requests per 5 minutes per IP
     enableCommonRuleSet: true, // Protects against SQL injection, XSS, etc.
     enableKnownBadInputs: true, // Blocks known malicious inputs
