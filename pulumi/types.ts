@@ -72,6 +72,55 @@ export interface DatabaseArgs extends ComponentArgs {}
 
 export interface QueueArgs extends ComponentArgs {}
 
+export interface LambdaConfig {
+  /**
+   * Memory size in MB
+   * @default 256
+   */
+  memory?: number;
+
+  /**
+   * Timeout in seconds
+   * @default 15
+   */
+  timeout?: number;
+
+  /**
+   * Lambda runtime
+   * @default NodeJS20dX
+   */
+  runtime?: aws.lambda.Runtime;
+
+  /**
+   * Architecture
+   * @default "x86_64"
+   */
+  architecture?: "x86_64" | "arm64";
+}
+
+export interface LambdaConfigMap {
+  /**
+   * Default configuration for all Lambda functions
+   */
+  default?: LambdaConfig;
+
+  /**
+   * Configuration for the default server function
+   */
+  defaultServer?: LambdaConfig;
+
+  /**
+   * Configuration for the image optimizer function
+   */
+  imageOptimizer?: LambdaConfig;
+
+  /**
+   * Configuration for custom server functions (e.g., api, fetchingPage)
+   * Key should match the function name from open-next.config.ts
+   */
+  [key: string]: LambdaConfig | undefined;
+}
+
 export interface FunctionsArgs extends ComponentArgs {
   environment: {
     variables: Record<string, pulumi.Input<string>>;
@@ -82,6 +131,7 @@ export interface FunctionsArgs extends ComponentArgs {
   bucketPolicy: pulumi.Output<string>;
   tablePolicy: pulumi.Output<string>;
   queuePolicy: pulumi.Output<string>;
+  lambdaConfig?: LambdaConfigMap;
 }
 
 export interface DistributionArgs extends ComponentArgs {

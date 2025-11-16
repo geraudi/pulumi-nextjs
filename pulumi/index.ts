@@ -2,6 +2,23 @@ import { NextJsSite } from "./nextjs";
 
 const site = new NextJsSite("nextjs-pulumi", {
   path: "../apps/web",
+  lambdaConfig: {
+    // Image optimizer needs more memory
+    imageOptimizer: {
+      memory: 2048,
+      timeout: 60,
+    },
+    // API routes need longer timeout
+    api: {
+      memory: 1024,
+      timeout: 45,
+    },
+    // Custom fetching page server
+    fetchingPage: {
+      memory: 512,
+      timeout: 20,
+    },
+  },
   // Warmer is disabled by default
   warmer: {
     enabled: true,
