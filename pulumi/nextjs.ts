@@ -9,13 +9,14 @@ import { NextJsQueue } from "./components/isr-revalidation/queue";
 import type { WafConfig } from "./components/security/waf";
 import { NextJsWaf } from "./components/security/waf";
 import { NextJsWarmer } from "./components/warmer/warmer";
-import type { OpenNextOutput, WarmerConfig } from "./types";
+import type { LambdaConfigMap, OpenNextOutput, WarmerConfig } from "./types";
 
 export interface NexJsSiteArgs {
   path?: string;
   environment?: Record<string, pulumi.Input<string>>;
   warmer?: WarmerConfig;
   waf?: WafConfig;
+  lambdaConfig?: LambdaConfigMap;
 }
 
 export class NextJsSite extends pulumi.ComponentResource {
@@ -103,6 +104,7 @@ export class NextJsSite extends pulumi.ComponentResource {
         bucketPolicy: this.storage.bucketPolicy.arn,
         tablePolicy: this.database.tablePolicy.arn,
         queuePolicy: this.queue.queuePolicy.arn,
+        lambdaConfig: args.lambdaConfig,
       },
       { parent: this },
     );

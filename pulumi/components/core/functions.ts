@@ -1,12 +1,32 @@
 import * as path from "node:path";
 import * as aws from "@pulumi/aws";
 import * as pulumi from "@pulumi/pulumi";
-import type { FunctionsArgs, OpenNextFunctionOrigin } from "../../types";
+import type {
+  FunctionsArgs,
+  LambdaConfig,
+  OpenNextFunctionOrigin,
+} from "../../types";
 import { createLoggingPolicy } from "../shared/iam";
 import {
   attachBasicLambdaExecutionRole,
   createLambdaRole,
 } from "../shared/utils";
+
+// Default configurations per server type
+const DEFAULT_LAMBDA_CONFIGS: Record<string, LambdaConfig> = {
+  default: {
+    memory: 512,
+    timeout: 15,
+    runtime: aws.lambda.Runtime.NodeJS20dX,
+    architecture: "x86_64",
+  },
+  imageOptimizer: {
+    memory: 1024,
+    timeout: 30,
+    runtime: aws.lambda.Runtime.NodeJS20dX,
+    architecture: "x86_64",
+  },
+};
 
 export class NextJsFunctions extends pulumi.ComponentResource {
   public functions: Map<string, aws.lambda.Function> = new Map();
@@ -46,21 +66,55 @@ export class NextJsFunctions extends pulumi.ComponentResource {
     });
   }
 
+  private getLambdaConfig(
+    key: string,
+    args: FunctionsArgs,
+  ): Required<LambdaConfig> {
+    // Start with base defaults
+    const baseDefaults: Required<LambdaConfig> = {
+      memory: 256,
+      timeout: 15,
+      runtime: aws.lambda.Runtime.NodeJS20dX,
+      architecture: "x86_64",
+    };
+
+    // Get server-type specific defaults
+    const serverKey = key === "default" ? "default" : key;
+    const serverDefaults = DEFAULT_LAMBDA_CONFIGS[serverKey] || {};
+
+    // Get user-provided configs
+    const userDefaultConfig = args.lambdaConfig?.default || {};
+    const userServerConfig =
+      key === "default"
+        ? args.lambdaConfig?.defaultServer || {}
+        : args.lambdaConfig?.[key] || {};
+
+    // Merge in order: base -> server defaults -> user default -> user server-specific
+    return {
+      ...baseDefaults,
+      ...serverDefaults,
+      ...userDefaultConfig,
+      ...userServerConfig,
+    };
+  }
+
   private createFunctionOrigin(
     key: string,
     origin: OpenNextFunctionOrigin,
     args: FunctionsArgs,
   ): void {
     const role = createLambdaRole(`${args.name}-${key}-origin`, this);
+    const config = this.getLambdaConfig(key, args);
 
     const fn = new aws.lambda.Function(
       `${args.name}-${key}-origin-lambda`,
       {
         handler: origin.handler,
-        runtime: aws.lambda.Runtime.NodeJS20dX,
+        runtime: config.runtime,
         environment: args.environment,
-        timeout: 15,
-        memorySize: 256,
+        timeout: config.timeout,
+        memorySize: config.memory,
+        architectures: [config.architecture],
         role: role.arn,
         code: new pulumi.asset.FileArchive(path.join(args.path, origin.bundle)),
       },
