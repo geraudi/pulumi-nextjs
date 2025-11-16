@@ -1,6 +1,6 @@
-import * as path from "node:path";
 import * as aws from "@pulumi/aws";
 import * as pulumi from "@pulumi/pulumi";
+import * as path from "node:path";
 import type { WarmerArgs, WarmerConfig } from "../../types";
 import { createLoggingPolicy } from "../shared/iam";
 import { createLambdaRole } from "../shared/utils";
@@ -71,6 +71,28 @@ export class NextJsWarmer extends pulumi.ComponentResource {
     };
   }
 
+  private shouldWarmFunction(
+    functionKey: string,
+    config?: WarmerConfig,
+  ): boolean {
+    if (!config?.functions?.[functionKey]) {
+      return true; // Warm by default if not specified
+    }
+    return config.functions[functionKey].enabled !== false;
+  }
+
+  private getFunctionConcurrency(
+    functionKey: string,
+    config: ResolvedWarmerConfig,
+    warmerConfig?: WarmerConfig,
+  ): number {
+    const functionConfig = warmerConfig?.functions?.[functionKey];
+    if (functionConfig?.concurrency !== undefined) {
+      return functionConfig.concurrency;
+    }
+    return config.concurrency;
+  }
+
   private createWarmerFunction(
     args: WarmerArgs,
     config: ResolvedWarmerConfig,
@@ -122,10 +144,12 @@ export class NextJsWarmer extends pulumi.ComponentResource {
 
     // Build WARM_PARAMS environment variable
     // Format: [{"function": "function-name", "concurrency": 1}, ...]
-    const warmParams = Array.from(args.functions.entries()).map(([, fn]) => ({
-      function: fn.name,
-      concurrency: config.concurrency,
-    }));
+    const warmParams = Array.from(args.functions.entries())
+      .filter(([key]) => this.shouldWarmFunction(key, args.config))
+      .map(([key, fn]) => ({
+        function: fn.name,
+        concurrency: this.getFunctionConcurrency(key, config, args.config),
+      }));
 
     const warmerConfig = args.openNextOutput.additionalProps?.warmer;
     if (!warmerConfig) {

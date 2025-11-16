@@ -34,7 +34,27 @@ const site = new NextJsSite("my-site", {
   warmer: {
     enabled: true,
     schedule: "rate(3 minutes)", // Warm every 3 minutes
-    concurrency: 2, // Invoke 2 instances per warming cycle
+    concurrency: 2, // Default concurrency for all functions
+  },
+});
+```
+
+### Per-Function Configuration
+
+You can configure warming behavior for individual functions:
+
+```typescript
+const site = new NextJsSite("my-site", {
+  path: "../apps/web",
+  warmer: {
+    enabled: true,
+    schedule: "rate(5 minutes)",
+    concurrency: 1, // Default for functions not specified below
+    functions: {
+      api: { enabled: false }, // Disable warming for API function
+      fetchingPage: { concurrency: 2 }, // Warm with 2 concurrent instances
+      server: { concurrency: 3 }, // Warm with 3 concurrent instances
+    },
   },
 });
 ```
@@ -72,12 +92,26 @@ The warmer creates:
 
 ## Configuration Options
 
+### Global Options
+
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
 | `enabled` | boolean | `true` | Enable or disable the warmer |
 | `schedule` | string | `"rate(5 minutes)"` | EventBridge schedule expression |
-| `concurrency` | number | `1` | Number of concurrent invocations |
+| `concurrency` | number | `1` | Default number of concurrent invocations for all functions |
 | `payload` | object | `{ warmer: true }` | Custom warming payload |
+| `functions` | object | `{}` | Per-function configuration overrides |
+
+### Per-Function Options
+
+Configure individual functions using the `functions` object with function names as keys:
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `enabled` | boolean | `true` | Enable or disable warming for this specific function |
+| `concurrency` | number | (global) | Override concurrency for this function |
+
+**Available function names**: `server`, `api`, `imageOptimization`, `revalidate`, `warmer`, or any custom function name from your OpenNext output.
 
 ## How It Works
 
@@ -90,8 +124,10 @@ The warmer creates:
 ## Best Practices
 
 - **Schedule Frequency**: Balance between cost and performance. 5 minutes is a good default.
-- **Concurrency**: Set to match your expected concurrent load
-- **Cost Optimization**: Consider disabling during low-traffic periods
+- **Concurrency**: Set to match your expected concurrent load for each function
+- **Selective Warming**: Disable warming for functions that don't benefit from it (e.g., infrequently used API routes)
+- **Per-Function Tuning**: Use higher concurrency for high-traffic functions, lower for others
+- **Cost Optimization**: Consider disabling during low-traffic periods or for specific functions
 - **Function Detection**: Add warming detection logic in your functions:
 
 ```typescript
@@ -120,6 +156,7 @@ The warmer creates CloudWatch metrics automatically:
 - Lambda: Charged per invocation and duration
 - Example: 5-minute warming for 3 functions = ~25,920 invocations/month
 - Estimated cost: $0.01-0.05/month (depending on function duration)
+- **Optimization**: Disable warming for unused functions to reduce costs
 
 ## Troubleshooting
 

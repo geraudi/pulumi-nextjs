@@ -107,10 +107,33 @@ export interface WarmerConfig {
   schedule?: string;
 
   /**
-   * Number of concurrent invocations per warming cycle
+   * Number of concurrent invocations per warming cycle (applies to all functions if not specified per-function)
    * @default 1
    */
   concurrency?: number;
+
+  /**
+   * Per-function warming configuration
+   * @example
+   * {
+   *   api: { concurrency: 5 },
+   *   fetchingPage: { enabled: false }
+   * }
+   */
+  functions?: {
+    [functionKey: string]: {
+      /**
+       * Enable or disable warming for this specific function
+       * @default true
+       */
+      enabled?: boolean;
+      /**
+       * Number of concurrent invocations for this function
+       * Required if enabled is true or undefined
+       */
+      concurrency?: number;
+    };
+  };
 
   /**
    * Custom warming payload
