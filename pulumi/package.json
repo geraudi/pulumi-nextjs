@@ -13,14 +13,14 @@
   "devDependencies": {
     "@types/glob": "^9.0.0",
     "@types/mime": "^4.0.0",
-    "@types/node": "^24.10.1",
+    "@types/node": "^25.0.3",
     "typescript": "^5.9.3"
   },
   "dependencies": {
-    "@pulumi/aws": "^7.11.1",
-    "@pulumi/pulumi": "^3.207.0",
+    "@pulumi/aws": "^7.15.0",
+    "@pulumi/pulumi": "^3.213.0",
     "archiver": "^7.0.1",
-    "glob": "^11.0.3",
+    "glob": "^13.0.0",
     "mime": "^4.1.0"
   }
 }
