@@ -1,17 +1,17 @@
-import type { GetStaticProps } from 'next';
+import type { GetStaticProps } from "next";
 
 type Props = {
-    message: string;
-}
+  message: string;
+};
 
 export const getStaticProps: GetStaticProps<Props> = async () => {
-    return {
-        props: {
-            message: 'Hello depuis une page SSG avec getStaticProps !',
-        },
-    };
+  return {
+    props: {
+      message: "Hello depuis une page SSG avec getStaticProps !",
+    },
+  };
 };
 
 export default function About({ message }: Props) {
-    return <h1>{message}</h1>;
+  return <h1>{message}</h1>;
 }

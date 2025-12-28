@@ -143,7 +143,7 @@ class PnpmSymlinkFixer {
       fs.accessSync(symlinkPath);
       this.log(`Symlink ${fileName} is valid`, "success");
       return true;
-    } catch (error) {
+    } catch (_error) {
       this.log(`Fixing broken symlink: ${fileName}`, "warning");
 
       const actualFile = this.resolvePnpmSymlink(symlinkPath, binDir);
