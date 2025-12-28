@@ -21,7 +21,7 @@ const site = new NextJsSite("nextjs-pulumi", {
   },
   // Warmer is disabled by default
   warmer: {
-    enabled: true,
+    enabled: false,
     schedule: "rate(5 minutes)",
     concurrency: 1, // Default for functions not specified below
     functions: {
