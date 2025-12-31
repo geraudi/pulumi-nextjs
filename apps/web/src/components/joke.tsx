@@ -1,5 +1,8 @@
 import { fetchJoke } from "@/data/fetch-joke";
 
+/**
+ * Joke component that fetches a joke from an API and displays it.
+ */
 export default async function Joke() {
   const joke = await fetchJoke();
 
