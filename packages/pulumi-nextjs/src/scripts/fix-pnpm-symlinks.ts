@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
-const fs = require("node:fs");
-const path = require("node:path");
+import * as fs from "node:fs";
+import * as path from "node:path";
 
 /**
  * Enhanced symlink fixer for pnpm + OpenNext compatibility
@@ -12,13 +12,17 @@ const path = require("node:path");
  */
 
 class PnpmSymlinkFixer {
+  private openNextDir: string;
+  private fixed: number;
+  private errors: number;
+
   constructor(openNextDir = ".open-next") {
     this.openNextDir = openNextDir;
     this.fixed = 0;
     this.errors = 0;
   }
 
-  log(message, type = "info") {
+  log(message: string, type = "info") {
     const prefix = {
       info: "ℹ️",
       success: "✅",
@@ -32,9 +36,9 @@ class PnpmSymlinkFixer {
    * Find all .bin directories in the OpenNext output
    */
   findBinDirectories() {
-    const binDirs = [];
+    const binDirs: string[] = [];
 
-    const searchDir = (dir) => {
+    const searchDir = (dir: string) => {
       if (!fs.existsSync(dir)) return;
 
       const entries = fs.readdirSync(dir, { withFileTypes: true });
@@ -65,7 +69,7 @@ class PnpmSymlinkFixer {
   /**
    * Resolve pnpm symlinks by finding the actual executable files
    */
-  resolvePnpmSymlink(symlinkPath, binDir) {
+  resolvePnpmSymlink(symlinkPath: string, binDir: string) {
     try {
       const target = fs.readlinkSync(symlinkPath);
       const fileName = path.basename(symlinkPath);
@@ -125,7 +129,7 @@ class PnpmSymlinkFixer {
       return null;
     } catch (error) {
       this.log(
-        `Error resolving symlink ${symlinkPath}: ${error.message}`,
+        `Error resolving symlink ${symlinkPath}: ${error instanceof Error ? error.message : "Unknown error"}`,
         "error",
       );
       return null;
@@ -135,7 +139,7 @@ class PnpmSymlinkFixer {
   /**
    * Fix a single symlink by replacing it with the actual file
    */
-  fixSymlink(symlinkPath, binDir) {
+  fixSymlink(symlinkPath: string, binDir: string) {
     const fileName = path.basename(symlinkPath);
 
     try {
@@ -143,8 +147,11 @@ class PnpmSymlinkFixer {
       fs.accessSync(symlinkPath);
       this.log(`Symlink ${fileName} is valid`, "success");
       return true;
-    } catch (_error) {
-      this.log(`Fixing broken symlink: ${fileName}`, "warning");
+    } catch (error) {
+      this.log(
+        `Fixing broken symlink: ${fileName}: ${error instanceof Error ? error.message : "Unknown error"}`,
+        "warning",
+      );
 
       const actualFile = this.resolvePnpmSymlink(symlinkPath, binDir);
 
@@ -177,7 +184,7 @@ class PnpmSymlinkFixer {
   /**
    * Process all symlinks in a .bin directory
    */
-  processBinDirectory(binDir) {
+  processBinDirectory(binDir: string) {
     this.log(`Processing ${binDir}`);
 
     if (!fs.existsSync(binDir)) {
@@ -197,7 +204,10 @@ class PnpmSymlinkFixer {
           this.fixSymlink(filePath, binDir);
         }
       } catch (error) {
-        this.log(`Error processing ${file}: ${error.message}`, "error");
+        this.log(
+          `Error processing ${file}: ${error instanceof Error ? error.message : "Unknown error"}`,
+          "error",
+        );
         this.errors++;
       }
     }
@@ -236,8 +246,7 @@ class PnpmSymlinkFixer {
   }
 }
 
-// Run the fixer
-const fixer = new PnpmSymlinkFixer();
-const success = fixer.fixAll();
-
-process.exit(success ? 0 : 1);
+export const fixSymLinks = (openNextDir: string) => {
+  const fixer = new PnpmSymlinkFixer(openNextDir);
+  fixer.fixAll();
+};

@@ -33,7 +33,6 @@ export default {
       },
     },
   },
-
   imageOptimization: {
     override: {
       wrapper: "aws-lambda",

@@ -7,7 +7,7 @@ var __require = /* @__PURE__ */ ((x) => typeof require !== "undefined" ? require
 
 // src/nextjs.ts
 import { readFileSync } from "fs";
-import * as path6 from "path";
+import * as path7 from "path";
 import * as pulumi8 from "@pulumi/pulumi";
 
 // src/components/core/distribution.ts
@@ -1231,19 +1231,214 @@ var NextJsWarmer = class extends pulumi7.ComponentResource {
   }
 };
 
+// src/scripts/fix-pnpm-symlinks.ts
+import * as fs from "fs";
+import * as path6 from "path";
+var PnpmSymlinkFixer = class {
+  constructor(openNextDir = ".open-next") {
+    this.openNextDir = openNextDir;
+    this.fixed = 0;
+    this.errors = 0;
+  }
+  log(message, type = "info") {
+    const prefix = {
+      info: "\u2139\uFE0F",
+      success: "\u2705",
+      error: "\u274C",
+      warning: "\u26A0\uFE0F"
+    }[type];
+    console.log(`${prefix} ${message}`);
+  }
+  /**
+   * Find all .bin directories in the OpenNext output
+   */
+  findBinDirectories() {
+    const binDirs = [];
+    const searchDir = (dir) => {
+      if (!fs.existsSync(dir)) return;
+      const entries = fs.readdirSync(dir, { withFileTypes: true });
+      for (const entry of entries) {
+        const fullPath = path6.join(dir, entry.name);
+        if (entry.isDirectory()) {
+          if (entry.name === ".bin") {
+            binDirs.push(fullPath);
+          } else if (entry.name === "node_modules") {
+            const binPath = path6.join(fullPath, ".bin");
+            if (fs.existsSync(binPath)) {
+              binDirs.push(binPath);
+            }
+          } else {
+            searchDir(fullPath);
+          }
+        }
+      }
+    };
+    searchDir(this.openNextDir);
+    return binDirs;
+  }
+  /**
+   * Resolve pnpm symlinks by finding the actual executable files
+   */
+  resolvePnpmSymlink(symlinkPath, binDir) {
+    try {
+      const target = fs.readlinkSync(symlinkPath);
+      const fileName = path6.basename(symlinkPath);
+      const nodeModulesDir = path6.dirname(binDir);
+      const searchPaths = [
+        // Direct relative path resolution
+        path6.resolve(binDir, target),
+        // Look in the package's bin directory
+        path6.join(nodeModulesDir, fileName, "bin.js"),
+        path6.join(nodeModulesDir, fileName, "cli.js"),
+        path6.join(nodeModulesDir, fileName, "index.js"),
+        path6.join(nodeModulesDir, fileName, `bin/${fileName}`),
+        path6.join(nodeModulesDir, fileName, `bin/${fileName}.js`),
+        // Look for the package in common locations
+        path6.join(
+          nodeModulesDir,
+          `.pnpm/${fileName}@*/node_modules/${fileName}/bin.js`
+        ),
+        path6.join(
+          nodeModulesDir,
+          `.pnpm/${fileName}@*/node_modules/${fileName}/cli.js`
+        )
+      ];
+      for (const searchPath of searchPaths) {
+        if (searchPath.includes("*")) {
+          const globPattern = searchPath;
+          const baseDir = globPattern.split("*")[0];
+          const suffix = globPattern.split("*")[1];
+          if (fs.existsSync(path6.dirname(baseDir))) {
+            const entries = fs.readdirSync(path6.dirname(baseDir));
+            for (const entry of entries) {
+              if (entry.startsWith(path6.basename(baseDir).replace("@", ""))) {
+                const fullPath = path6.join(
+                  path6.dirname(baseDir),
+                  entry,
+                  suffix
+                );
+                if (fs.existsSync(fullPath)) {
+                  return fullPath;
+                }
+              }
+            }
+          }
+        } else if (fs.existsSync(searchPath)) {
+          return searchPath;
+        }
+      }
+      return null;
+    } catch (error) {
+      this.log(
+        `Error resolving symlink ${symlinkPath}: ${error instanceof Error ? error.message : "Unknown error"}`,
+        "error"
+      );
+      return null;
+    }
+  }
+  /**
+   * Fix a single symlink by replacing it with the actual file
+   */
+  fixSymlink(symlinkPath, binDir) {
+    const fileName = path6.basename(symlinkPath);
+    try {
+      fs.accessSync(symlinkPath);
+      this.log(`Symlink ${fileName} is valid`, "success");
+      return true;
+    } catch (error) {
+      this.log(
+        `Fixing broken symlink: ${fileName}: ${error instanceof Error ? error.message : "Unknown error"}`,
+        "warning"
+      );
+      const actualFile = this.resolvePnpmSymlink(symlinkPath, binDir);
+      if (actualFile && fs.existsSync(actualFile)) {
+        fs.unlinkSync(symlinkPath);
+        fs.copyFileSync(actualFile, symlinkPath);
+        fs.chmodSync(symlinkPath, 493);
+        this.log(
+          `Fixed ${fileName} -> ${path6.relative(process.cwd(), actualFile)}`,
+          "success"
+        );
+        this.fixed++;
+        return true;
+      } else {
+        this.log(`Could not find actual file for ${fileName}`, "error");
+        fs.unlinkSync(symlinkPath);
+        this.errors++;
+        return false;
+      }
+    }
+  }
+  /**
+   * Process all symlinks in a .bin directory
+   */
+  processBinDirectory(binDir) {
+    this.log(`Processing ${binDir}`);
+    if (!fs.existsSync(binDir)) {
+      this.log(`Directory ${binDir} does not exist`, "warning");
+      return;
+    }
+    const files = fs.readdirSync(binDir);
+    for (const file of files) {
+      const filePath = path6.join(binDir, file);
+      try {
+        const stats = fs.lstatSync(filePath);
+        if (stats.isSymbolicLink()) {
+          this.fixSymlink(filePath, binDir);
+        }
+      } catch (error) {
+        this.log(
+          `Error processing ${file}: ${error instanceof Error ? error.message : "Unknown error"}`,
+          "error"
+        );
+        this.errors++;
+      }
+    }
+  }
+  /**
+   * Main method to fix all symlinks in OpenNext output
+   */
+  fixAll() {
+    this.log("Starting pnpm symlink fix for OpenNext...");
+    if (!fs.existsSync(this.openNextDir)) {
+      this.log(`OpenNext directory ${this.openNextDir} not found`, "error");
+      return false;
+    }
+    const binDirectories = this.findBinDirectories();
+    if (binDirectories.length === 0) {
+      this.log("No .bin directories found", "warning");
+      return true;
+    }
+    this.log(`Found ${binDirectories.length} .bin directories`);
+    for (const binDir of binDirectories) {
+      this.processBinDirectory(binDir);
+    }
+    this.log(
+      `Symlink fix complete! Fixed: ${this.fixed}, Errors: ${this.errors}`,
+      this.errors === 0 ? "success" : "warning"
+    );
+    return this.errors === 0;
+  }
+};
+var fixSymLinks = (openNextDir) => {
+  const fixer = new PnpmSymlinkFixer(openNextDir);
+  fixer.fixAll();
+};
+
 // src/nextjs.ts
 var NextJsSite = class extends pulumi8.ComponentResource {
   constructor(name, args, opts) {
     super("cloud:index:NextJsSite", name, {}, opts);
     this.path = args.path ?? "../apps/web";
+    const openNextDir = path7.join(this.path, ".open-next");
+    if (args.fixSymLinks === true) {
+      fixSymLinks(openNextDir);
+    }
     this.environment = args.environment ?? {};
     this.name = name;
     this.region = "us-east-1";
     this.openNextOutput = JSON.parse(
-      readFileSync(
-        path6.join(this.path, ".open-next", "open-next.output.json"),
-        "utf-8"
-      )
+      readFileSync(path7.join(openNextDir, "open-next.output.json"), "utf-8")
     );
     this.storage = new NextJsStorage(
       `${name}-storage`,

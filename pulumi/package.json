@@ -2,9 +2,6 @@
   "name": "@monorepo/pulumi",
   "main": "index.ts",
   "scripts": {
-    "build": "echo 'Pulumi: No build step required'",
-    "openbuild": "echo 'Pulumi: No OpenNext build needed'",
-    "verify": "echo 'Pulumi: Verification passed'",
     "deploy": "pulumi up --yes",
     "destroy": "pulumi destroy",
     "preview": "pulumi preview",
