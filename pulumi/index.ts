@@ -1,4 +1,4 @@
-import { NextJsSite } from "./nextjs";
+import { NextJsSite } from "@giweb/pulumi-nextjs";
 
 const site = new NextJsSite("nextjs-pulumi", {
   path: "../apps/web",

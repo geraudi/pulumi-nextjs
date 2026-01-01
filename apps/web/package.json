@@ -9,7 +9,6 @@
     "openbuild": "open-next build && node scripts/fix-pnpm-symlinks.js",
     "openbuild:debug": "OPEN_NEXT_DEBUG=true open-next build && node scripts/fix-pnpm-symlinks.js",
     "verify": "node ../../scripts/turbo-verify-lambda.js",
-    "deploy": "echo 'Web app: Deploy handled by Pulumi package'",
     "lint": "biome check .",
     "lint:fix": "biome check --write .",
     "format": "biome format --write .",
