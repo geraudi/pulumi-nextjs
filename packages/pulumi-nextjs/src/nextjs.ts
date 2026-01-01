@@ -9,6 +9,7 @@ import { NextJsQueue } from "./components/isr-revalidation/queue";
 import type { WafConfig } from "./components/security/waf";
 import { NextJsWaf } from "./components/security/waf";
 import { NextJsWarmer } from "./components/warmer/warmer";
+import { fixSymLinks } from "./scripts/fix-pnpm-symlinks";
 import type { LambdaConfigMap, OpenNextOutput, WarmerConfig } from "./types";
 
 export interface NexJsSiteArgs {
@@ -17,6 +18,7 @@ export interface NexJsSiteArgs {
   warmer?: WarmerConfig;
   waf?: WafConfig;
   lambdaConfig?: LambdaConfigMap;
+  fixSymLinks?: boolean;
 }
 
 export class NextJsSite extends pulumi.ComponentResource {
@@ -26,8 +28,8 @@ export class NextJsSite extends pulumi.ComponentResource {
   private queue: NextJsQueue;
   private functions: NextJsFunctions;
   private distribution: NextJsDistribution;
-  private warmer?: NextJsWarmer;
   private waf?: NextJsWaf;
+  private warmer?: NextJsWarmer;
 
   private readonly name: string;
   private readonly region: string;
@@ -45,15 +47,17 @@ export class NextJsSite extends pulumi.ComponentResource {
     super("cloud:index:NextJsSite", name, {}, opts);
 
     this.path = args.path ?? "../apps/web";
+    const openNextDir = path.join(this.path, ".open-next");
+    if (args.fixSymLinks === true) {
+      fixSymLinks(openNextDir);
+    }
+
     this.environment = args.environment ?? {};
     this.name = name;
     this.region = "us-east-1";
 
     this.openNextOutput = JSON.parse(
-      readFileSync(
-        path.join(this.path, ".open-next", "open-next.output.json"),
-        "utf-8",
-      ),
+      readFileSync(path.join(openNextDir, "open-next.output.json"), "utf-8"),
     ) as OpenNextOutput;
 
     // Create sub-components

@@ -1,21 +1,12 @@
 {
   "$schema": "https://turbo.build/schema.json",
   "ui": "tui",
-  "globalDependencies": [
-    "**/.env*"
-  ],
-  "globalEnv": [
-    "NODE_ENV"
-  ],
+  "globalDependencies": ["**/.env*"],
+  "globalEnv": ["NODE_ENV"],
   "tasks": {
     "build": {
-      "dependsOn": [
-        "^build"
-      ],
-      "outputs": [
-        ".next/**",
-        "dist/**"
-      ],
+      "dependsOn": ["^build"],
+      "outputs": [".next/**", "dist/**"],
       "inputs": [
         "src/**",
         "public/**",
@@ -26,9 +17,7 @@
     },
     "openbuild": {
       "dependsOn": [],
-      "outputs": [
-        ".open-next/**"
-      ],
+      "outputs": [".open-next/**"],
       "inputs": [
         "src/**",
         "public/**",
@@ -36,41 +25,23 @@
         "package.json",
         "tsconfig.json"
       ],
-      "env": [
-        "NODE_ENV"
-      ],
+      "env": ["NODE_ENV"],
       "cache": true
     },
     "verify": {
-      "dependsOn": [
-        "openbuild"
-      ],
-      "inputs": [
-        ".open-next/**"
-      ],
+      "dependsOn": ["openbuild"],
+      "inputs": [".open-next/**"],
       "cache": true
     },
     "deploy": {
-      "dependsOn": [
-        "@monorepo/web#openbuild"
-      ],
+      "dependsOn": ["@monorepo/web#openbuild", "@giweb/pulumi-nextjs#build"],
       "cache": false,
-      "inputs": [
-        ".open-next/**",
-        "*.ts",
-        "components/**"
-      ]
+      "inputs": [".open-next/**", "*.ts", "components/**"]
     },
     "preview": {
-      "dependsOn": [
-        "@monorepo/web#openbuild"
-      ],
+      "dependsOn": ["@monorepo/web#openbuild", "@giweb/pulumi-nextjs#build"],
       "cache": false,
-      "inputs": [
-        ".open-next/**",
-        "*.ts",
-        "components/**"
-      ]
+      "inputs": [".open-next/**", "*.ts", "components/**"]
     },
     "destroy": {
       "cache": false
@@ -80,14 +51,8 @@
       "persistent": true
     },
     "lint": {
-      "dependsOn": [
-        "^build"
-      ],
-      "inputs": [
-        "src/**",
-        "*.config.*",
-        "package.json"
-      ],
+      "dependsOn": ["^build"],
+      "inputs": ["src/**", "*.config.*", "package.json"],
       "outputs": []
     },
     "clean": {

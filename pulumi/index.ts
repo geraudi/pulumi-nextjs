@@ -2,18 +2,19 @@ import { NextJsSite } from "@giweb/pulumi-nextjs";
 
 const site = new NextJsSite("nextjs-pulumi", {
   path: "../apps/web",
+  fixSymLinks: true,
   lambdaConfig: {
-    // Image optimizer needs more memory
+    // Image optimizer needs more memory (predefined in open-next)
     imageOptimizer: {
       memory: 2048,
       timeout: 60,
     },
-    // API routes need longer timeout
+    // API routes need longer timeout (predefined in open-next)
     api: {
       memory: 1024,
       timeout: 45,
     },
-    // Custom fetching page server
+    // Custom fetching page server (cf apps/web/open-next.config.ts  {functions: { fetchingPage: { ... } } })
     fetchingPage: {
       memory: 512,
       timeout: 20,
