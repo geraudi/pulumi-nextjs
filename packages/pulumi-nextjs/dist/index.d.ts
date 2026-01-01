@@ -203,7 +203,6 @@ interface NexJsSiteArgs {
     warmer?: WarmerConfig;
     waf?: WafConfig;
     lambdaConfig?: LambdaConfigMap;
-    fixSymLinks?: boolean;
 }
 declare class NextJsSite extends pulumi.ComponentResource {
     private openNextOutput;
@@ -212,8 +211,8 @@ declare class NextJsSite extends pulumi.ComponentResource {
     private queue;
     private functions;
     private distribution;
-    private waf?;
     private warmer?;
+    private waf?;
     private readonly name;
     private readonly region;
     path: string;
