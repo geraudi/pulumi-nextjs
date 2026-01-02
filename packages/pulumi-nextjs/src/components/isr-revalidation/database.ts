@@ -21,7 +21,7 @@ export class NextJsDatabase extends pulumi.ComponentResource {
   }
 
   private createRevalidationTable(args: DatabaseArgs): aws.dynamodb.Table {
-    const tableName = "RevalidationTable";
+    const tableName = `${args.name}-RevalidationTable`;
     const table = new aws.dynamodb.Table(
       `${args.name}-revalidation-table`,
       {
