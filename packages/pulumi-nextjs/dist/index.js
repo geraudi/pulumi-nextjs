@@ -689,7 +689,7 @@ var NextJsDatabase = class extends pulumi4.ComponentResource {
     this.tablePolicy = createTablePolicy(args.name, this.table.arn, this);
   }
   createRevalidationTable(args) {
-    const tableName = "RevalidationTable";
+    const tableName = `${args.name}-RevalidationTable`;
     const table = new aws6.dynamodb.Table(
       `${args.name}-revalidation-table`,
       {
