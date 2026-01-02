@@ -2,9 +2,94 @@
 
 Infrastructure-as-code solution for deploying Next.js applications on AWS using Pulumi and OpenNext in a Turbo monorepo with full pnpm support.
 
-> **📚 Learning Project**: This repository is designed for educational purposes to understand how Next.js applications are deployed to AWS infrastructure. For production deployments, consider using [SST (Serverless Stack)](https://sst.dev/) which provides a complete, battle-tested solution with additional features and better developer experience.
+> ** Learning Project**: This repository is designed for educational purposes to understand how Next.js applications are deployed to AWS infrastructure. For production deployments, consider using [SST (Serverless Stack)](https://sst.dev/) which provides a complete, battle-tested solution with additional features and better developer experience.
 
-## ⚡ Quick Commands
+## Published Package
+
+This monorepo contains the **`@giweb/pulumi-nextjs`** package, published on npm registry:
+
+- **Package**: [`@giweb/pulumi-nextjs`](https://www.npmjs.com/package/@giweb/pulumi-nextjs)
+- **Location**: `packages/pulumi-nextjs/`
+- **Purpose**: Pulumi component for deploying Next.js applications to AWS using OpenNext
+- **Installation**: `npm install @giweb/pulumi-nextjs`
+
+## Get started
+To use `@giweb/pulumi-nextjs` in your own project (outside this monorepo):
+
+### 1. Configure OpenNext
+In the next.js application root, add the file `open-next.config.ts`
+[Documentation OpenNext](https://opennext.js.org/aws/config)
+Minimal content:
+```
+export default {
+  default: {},
+};
+```
+
+### 2. Configure Pulumi and @giweb/pulumi-nextjs
+In an empty folder
+
+1. **Initialize Pulumi**:
+```bash
+pulumi new aws-typescript
+```
+
+2. **Install the package**:
+```bash
+npm install @giweb/pulumi-nextjs
+# or
+pnpm add @giweb/pulumi-nextjs
+# or
+yarn add @giweb/pulumi-nextjs
+```
+
+Follow [Pulumi Get started documentation](https://www.pulumi.com/docs/iac/get-started/aws/begin/) to install Pulumi and configure AWS.
+
+3. **Configure the package**:
+
+```typescript
+// index.ts
+import { NextJsSite } from "@giweb/pulumi-nextjs";
+
+const site = new NextJsSite("my-website", {
+  // path to the next.js application
+  path: "../apps/web"
+});
+
+export const url = site.url;
+```
+
+### 3. Deploy
+
+#### 1. Build Next.js project with OpenNext
+```bash
+cd path/to/next.js/project
+npx @opennextjs/aws@latest build
+```
+
+#### 2. Deploy to AWS with pulumi
+```bash
+cd path/to/pulumi/folder
+pulumi up
+```
+
+## Monorepo Structure
+
+This repository is organized as a Turbo monorepo with the following packages:
+
+```
+├── packages/
+│   └── pulumi-nextjs/         # 📦 @giweb/pulumi-nextjs (published to npm)
+├── apps/
+│   └── web/                   # Example Next.js application
+├── pulumi/                    # Example infrastructure code using the package
+└── docs/                      # Documentation and guides
+```
+
+The `@giweb/pulumi-nextjs` package provides reusable Pulumi components that you can use in your own projects without needing to clone this entire repository.
+
+
+## Monorepo Quick Commands
 
 ```bash
 # Start development servers
@@ -17,7 +102,7 @@ pnpm deploy:aws
 pnpm destroy    
 ```
 
-## 🏗️ Architecture
+## Monorepo Architecture
 
 This project deploys a Next.js application using a serverless architecture on AWS:
 
@@ -45,12 +130,12 @@ This project deploys a Next.js application using a serverless architecture on AW
 - ✅ **Single command deployment** with automatic verification
 
 ### Security Features
-- 🔒 **IAM Authentication** for Lambda Function URLs using CloudFront Origin Access Control (OAC)
-- 🔒 **AWS WAF** integration with configurable rules (rate limiting, SQL injection, XSS protection)
-- 🔒 **TLS 1.2+** enforcement on CloudFront
-- 🔒 **Automatic SigV4 request signing** for secure Lambda invocations
+- **IAM Authentication** for Lambda Function URLs using CloudFront Origin Access Control (OAC)
+- **AWS WAF** integration with configurable rules (rate limiting, SQL injection, XSS protection)
+- **TLS 1.2+** enforcement on CloudFront
+- **Automatic SigV4 request signing** for secure Lambda invocations
 
-## 📋 Prerequisites
+## Prerequisites
 
 - [Node.js](https://nodejs.org/) (v18 or later)
 - [Pulumi CLI](https://www.pulumi.com/docs/install/)
@@ -58,79 +143,35 @@ This project deploys a Next.js application using a serverless architecture on AW
 - [pnpm](https://pnpm.io/installation) (v9.12.3 or later)
 - [Turbo](https://turbo.build/repo/docs/installing) (automatically installed)
 
-## 🛠️ Quick Start
+### Developing the Package
 
-### 1. Clone and Install Dependencies
+If you want to contribute to or modify the `@giweb/pulumi-nextjs` package:
 
-```bash
-# Install all dependencies (monorepo)
-pnpm install
+1. **Clone this repository**:
+   ```bash
+   git clone https://github.com/geraudi/pulumi-nextjs.git
+   cd pulumi-nextjs
+   ```
 
-# Or install individually
-pnpm install --filter @monorepo/web
-pnpm install --filter @monorepo/pulumi
-```
+2. **Install dependencies**:
+   ```bash
+   pnpm install
+   ```
 
-### 2. Configure AWS Credentials
+3. **Work on the package**:
+   ```bash
+   cd packages/pulumi-nextjs
+   pnpm dev  # Watch mode for development
+   ```
 
-```bash
-aws configure
-# or set environment variables:
-# export AWS_ACCESS_KEY_ID=your_access_key
-# export AWS_SECRET_ACCESS_KEY=your_secret_key
-# export AWS_REGION=us-east-1
-```
+4. **Test with the example**:
+   ```bash
+   # From the root directory
+   pnpm build      # Build the package
+   pnpm deploy:aws # Test with the example app
+   ```
 
-### 3. Initialize Pulumi
-
-```bash
-cd pulumi
-pulumi login
-pulumi stack init dev  # or your preferred stack name
-```
-
-### 4. Build and Deploy
-
-```bash
-# Deploy to AWS (build, verify, and deploy)
-pnpm deploy:aws
-
-# Or step by step
-pnpm build      # Build Next.js app
-pnpm openbuild  # Create Lambda packages
-pnpm verify     # Verify packages are ready
-pnpm deploy:aws # Deploy to AWS
-```
-
-> **Note about pnpm + OpenNext compatibility**: This project includes automated fixes for pnpm symlink issues with AWS Lambda deployment. The `apps/web/scripts/fix-pnpm-symlinks.js` script automatically resolves symlinks after OpenNext builds to ensure proper Lambda packaging. All deployment commands (`pnpm deploy:aws`, `pnpm openbuild`) include these fixes automatically.
-
-### 5. Access Your Application
-
-After deployment, Pulumi will output the CloudFront URL where your application is accessible.
-
-## 📁 Project Structure
-
-```
-├── apps/
-│   └── web/                   # Next.js application (@monorepo/web)
-│       ├── src/               # Application source code
-│       ├── public/            # Static assets
-│       ├── scripts/           # Build and deployment scripts
-│       ├── open-next.config.ts # OpenNext configuration
-│       └── package.json
-├── pulumi/                    # Infrastructure code (@monorepo/pulumi)
-│   ├── index.ts              # Main Pulumi program
-│   ├── nextjs.ts             # NextJsSite component
-│   ├── types.ts              # TypeScript definitions
-│   └── package.json
-├── scripts/                   # Monorepo build scripts
-├── docs/                      # Documentation
-├── turbo.json                 # Turbo configuration
-├── pnpm-workspace.yaml        # pnpm workspace configuration
-└── package.json               # Root package.json
-```
-
-## 🔒 Security
+## Security
 
 This project implements AWS security best practices:
 
@@ -159,98 +200,7 @@ Optional WAF protection can be enabled with a simple configuration:
 
 See [docs/waf-configuration.md](docs/waf-configuration.md) for complete configuration guide.
 
-## ⚙️ Configuration
-
-### OpenNext Configuration
-
-Customize the OpenNext build in `nextjs-app/open-next.config.ts`. See the [OpenNext configuration documentation](https://opennext.js.org/aws/config) for all available options:
-
-```typescript
-import type { OpenNextConfig } from "@opennextjs/aws";
-
-const config: OpenNextConfig = {
-  default: {},
-  imageOptimization: {
-    arch: "x64",
-    runtime: "nodejs20.x",
-  },
-};
-
-export default config;
-```
-
-## 🔧 Development
-
-### Local Development
-
-```bash
-# Start all development servers
-pnpm dev
-
-# Start specific app
-pnpm --filter @monorepo/web dev
-```
-
-### Building
-
-```bash
-# Build all packages
-pnpm build
-
-# Build OpenNext packages (with pnpm symlink fixes)
-pnpm openbuild
-
-# Verify Lambda packages are ready
-pnpm verify
-
-# Debug OpenNext build
-cd apps/web && OPEN_NEXT_DEBUG=true pnpm openbuild
-```
-
-### Infrastructure Management
-
-```bash
-# Deploy to AWS (recommended)
-pnpm deploy:aws
-
-# Preview deployment changes
-pnpm deploy:preview
-
-# Destroy infrastructure
-pnpm destroy
-
-# Manual Pulumi commands (if needed)
-cd pulumi && pulumi up
-cd pulumi && pulumi destroy
-```
-
-## 🔗 pnpm + OpenNext Compatibility
-
-This monorepo solves the complex symlink issues between pnpm and OpenNext for AWS Lambda deployment:
-
-### The Problem
-- pnpm uses symlinks for efficient dependency management
-- AWS Lambda doesn't support symlinks in deployment packages
-- OpenNext's dependency installation doesn't handle pnpm's workspace structure
-
-### Our Solution
-1. **Enhanced Symlink Resolution**: Automatically converts symlinks to actual files
-2. **Strategic pnpm Configuration**: Optimized `.npmrc` settings for Lambda compatibility
-3. **Comprehensive Build Process**: Handles the entire pnpm → OpenNext → Lambda pipeline
-
-### Quick Fix Commands
-```bash
-# Fix symlinks manually if needed
-cd apps/web && pnpm fix-symlinks
-
-# Verify Lambda packages
-pnpm verify
-
-# Validate build output (check for broken symlinks)
-find apps/web/.open-next -type l -exec test ! -e {} \; -print
-```
-
-## 📚 Documentation
+## Documentation
 
 ### External References
 - [OpenNext Documentation](https://opennext.js.org/)
