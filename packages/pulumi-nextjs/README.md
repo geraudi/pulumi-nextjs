@@ -34,12 +34,13 @@ yarn add @giweb/pulumi-nextjs
 - AWS credentials configured
 - Next.js application built with OpenNext
 
+How to configure [Deployer IAM Permissions](./DEPLOYER_IAM_PERMISSIONS.md)
+
 ## Usage
 
 ### Basic Setup
 
 ```typescript
-import * as pulumi from "@pulumi/pulumi";
 import { NextJsSite } from "@giweb/pulumi-nextjs";
 
 const site = new NextJsSite("my-nextjs-site", {
