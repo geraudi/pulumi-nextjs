@@ -1465,8 +1465,8 @@ var NextJsSite = class extends pulumi8.ComponentResource {
     }
     this.environment = args.environment ?? {};
     this.name = name;
-    const config = new pulumi8.Config();
-    this.region = config.require("aws:region");
+    const awsConfig = new pulumi8.Config("aws");
+    this.region = awsConfig.require("region");
     this.openNextOutput = JSON.parse(
       (0, import_node_fs.readFileSync)(path7.join(openNextDir, "open-next.output.json"), "utf-8")
     );

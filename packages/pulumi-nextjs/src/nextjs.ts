@@ -55,8 +55,8 @@ export class NextJsSite extends pulumi.ComponentResource {
     this.environment = args.environment ?? {};
     this.name = name;
 
-    const config = new pulumi.Config();
-    this.region = config.require("aws:region");
+    const awsConfig = new pulumi.Config("aws");
+    this.region = awsConfig.require("region");
 
     this.openNextOutput = JSON.parse(
       readFileSync(path.join(openNextDir, "open-next.output.json"), "utf-8"),
